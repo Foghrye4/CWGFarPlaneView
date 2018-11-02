@@ -1,0 +1,16 @@
+[
+{
+  "modid": "vertical_spawn_control",
+  "name": "Vertical spawn control",
+  "description": "Vertical spawn control for Cubic Chunks",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Foghrye4"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
