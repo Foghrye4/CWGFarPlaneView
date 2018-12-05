@@ -12,6 +12,7 @@ import com.google.gson.stream.JsonReader;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.util.math.BlockPos.PooledMutableBlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldEntitySpawner;
@@ -22,24 +23,34 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTException;
 
 public class SpawnLayer {
-	int from;
-	int to;
+	int fromX=-100000;
+	int toX=100000;
+	int fromY;
+	int toY;
+	int fromZ=-100000;
+	int toZ=100000;
 	public boolean blockNaturalSpawn = true;
 	public final List<EntitySpawnDefinition> spawnList = new ArrayList<EntitySpawnDefinition>();
 	public final List<Class<? extends Entity>> blackList = new ArrayList<Class<? extends Entity>>();
 	public final Set<Biome> biomeBlackList = new HashSet<Biome>();
 	public final Set<Biome> biomeWhiteList = new HashSet<Biome>();
 	
-	private static final int MAX_GROUP_SIZE = 4;
-	
 	public SpawnLayer(JsonReader reader) throws IOException, NBTException {
 		reader.beginObject();
 		while (reader.hasNext()) {
 			String name = reader.nextName();
-			if (name.equals("from")) {
-				from = reader.nextInt();
-			} else if (name.equals("to")) {
-				to = reader.nextInt();
+			if (name.equals("from")||name.equals("fromY")) {
+				fromY = reader.nextInt();
+			} else if (name.equals("to")||name.equals("toY")) {
+				toY = reader.nextInt();
+			} else if (name.equals("fromX")) {
+				fromX = reader.nextInt();
+			} else if (name.equals("toX")) {
+				toX = reader.nextInt();
+			} else if (name.equals("fromZ")) {
+				fromZ = reader.nextInt();
+			} else if (name.equals("toZ")) {
+				toZ = reader.nextInt();
 			} else if (name.equals("exclude_biomes")) {
 				reader.beginArray();
 				while (reader.hasNext()) {
@@ -59,7 +70,10 @@ public class SpawnLayer {
 			} else if (name.equals("black_list")) {
 				reader.beginArray();
 				while (reader.hasNext()) {
-					Class<? extends Entity> entityClass = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(reader.nextString())).getEntityClass();
+					String ename = reader.nextString();
+					Class<? extends Entity> entityClass = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(ename)).getEntityClass();
+					if(entityClass==null)
+						throw new NullPointerException("No such entity registered: " + ename);
 					blackList.add(entityClass);
 				}
 				reader.endArray();
@@ -75,10 +89,20 @@ public class SpawnLayer {
 			}
 		}
 		reader.endObject();
-		if(from>to) {
-			int a = from;
-			from = to;
-			to = a;
+		if (fromY > toY) {
+			int a = fromY;
+			fromY = toY;
+			toY = a;
+		}
+		if (fromX > toX) {
+			int a = fromX;
+			fromX = toX;
+			toX = a;
+		}
+		if (fromZ > toZ) {
+			int a = fromZ;
+			fromZ = toZ;
+			toZ = a;
 		}
 	}
 
@@ -89,17 +113,23 @@ public class SpawnLayer {
 		}
 		Random rand = world.rand;
 		EntitySpawnDefinition def = spawnList.get(rand.nextInt(spawnList.size()));
-		int from1 = Math.max(blockPos.getY(), from);
-		int to1 = Math.min(blockPos.getY()+ICube.SIZE-1, to);
-		PooledMutableBlockPos pos = BlockPos.PooledMutableBlockPos.retain();
-		int groupSize = 0;
-		if(rand.nextFloat()>def.chance/(1.0f + world.loadedEntityList.size()*0.01f)) {
+		int fromX1 = Math.max(blockPos.getX(), fromX);
+		int toX1 = Math.min(blockPos.getX()+ICube.SIZE-1, toX);
+		
+		int fromZ1 = Math.max(blockPos.getZ(), fromZ);
+		int toZ1 = Math.min(blockPos.getZ()+ICube.SIZE-1, toZ);
+		
+		int fromY1 = Math.max(blockPos.getY(), fromY);
+		int toY1 = Math.min(blockPos.getY()+ICube.SIZE-1, toY);
+		if(rand.nextFloat()>def.chance/(1.0f + world.loadedEntityList.size()*0.1f)) {
 			return;
 		}
+		MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		IEntityLivingData data = null;
-		for(int ix = blockPos.getX()+rand.nextInt(5);ix<=blockPos.getX()+15;ix+=rand.nextInt(5) + 1)
-			for(int iz = blockPos.getZ()+rand.nextInt(5);iz<=blockPos.getZ()+15;iz+=rand.nextInt(5) + 1)
-				for(int iy = from1;iy<=to1;iy++) {
+		int groupSize1 = def.groupSize;
+		for(int ix = fromX1+rand.nextInt(5);ix<=toX1;ix+=rand.nextInt(5) + 1)
+			for(int iz = fromZ1+rand.nextInt(5);iz<=toZ1;iz+=rand.nextInt(5) + 1)
+				for(int iy = fromY1+rand.nextInt(ICube.SIZE-1);iy<=toY1;iy++) {
 					pos.setPos(ix, iy, iz);
 					if (!WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry
 			                .getPlacementForEntity(def.entityClass), world, pos)) {
@@ -110,22 +140,40 @@ public class SpawnLayer {
 						continue;
 					if(light>def.maxLightLevel)
 						continue;
-					if(def.spawn(world, pos, data) && groupSize++>MAX_GROUP_SIZE) {
+					if(def.spawn(world, pos, data) && --groupSize1 <= 0) {
 						return;
 					}
-					from1 = iy;
-					to1 = iy+1;
+					fromY1 = iy;
+					toY1 = iy+1;
 					break;
 				}
-		pos.release();
 	}
 	
 	public boolean isPosInside(BlockPos position) {
-		return position.getY()>from && position.getY()<to;
+		return position.getX()>fromX && position.getX()<toX && 
+				position.getY()>fromY && position.getY()<toY && 
+				position.getZ()>fromZ && position.getZ()<toZ;
 	}
 	
-	public boolean isIntersects(int posYMin, int posYMax) {
-		return posYMin>=from && posYMin<=to || posYMax>=from && posYMax<=to || posYMin>=from && posYMax<=to || posYMin<=from && posYMax>=to;
+	public boolean isIntersectsY(int posYMin, int posYMax) {
+		return posYMin>=fromY && posYMin<=toY || 
+				posYMax>=fromY && posYMax<=toY || 
+				posYMin>=fromY && posYMax<=toY || 
+				posYMin<=fromY && posYMax>=toY;
+	}
+	
+	public boolean isIntersectsX(int posXMin, int posXMax) {
+		return posXMin>=fromX && posXMin<=toX || 
+				posXMax>=fromX && posXMax<=toX || 
+				posXMin>=fromX && posXMax<=toX || 
+				posXMin<=fromX && posXMax>=toX;
+	}
+
+	public boolean isIntersectsZ(int posZMin, int posZMax) {
+		return posZMin>=fromZ && posZMin<=toZ || 
+				posZMax>=fromZ && posZMax<=toZ || 
+				posZMin>=fromZ && posZMax<=toZ || 
+				posZMin<=fromZ && posZMax>=toZ;
 	}
 	
 	public boolean isEffectiveAtBiomeAtPos(World world, BlockPos pos) {

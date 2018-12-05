@@ -23,6 +23,7 @@ public class EntitySpawnDefinition {
 	Class<? extends Entity> entityClass;
 	private java.lang.reflect.Constructor<? extends Entity> ctr;
 	public float chance = 1.0f;
+	public int groupSize = 4;
 	public NBTTagCompound nbt;
 	public int minLightLevel = 0;
 	public int maxLightLevel = 16;
@@ -41,7 +42,10 @@ public class EntitySpawnDefinition {
 		while (reader.hasNext()) {
 			String name = reader.nextName();
 			if(name.equals("class")) {
-				entityClass = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(reader.nextString())).getEntityClass();
+				String ename = reader.nextString();
+				entityClass = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(ename)).getEntityClass();
+				if(entityClass==null)
+					throw new NullPointerException("No such entity registered: " + ename);
 				try {
 					ctr = entityClass.getConstructor(World.class);
 				} catch (NoSuchMethodException | SecurityException e) {
@@ -50,6 +54,8 @@ public class EntitySpawnDefinition {
 			}
 			else if(name.equals("chance")) {
 				chance = (float) reader.nextDouble();
+			} else if (name.equals("group_size")) {
+				groupSize = reader.nextInt();
 			}
 			else if(name.equals("nbt")) {
 				nbt = JsonToNBT.getTagFromJson(reader.nextString());
