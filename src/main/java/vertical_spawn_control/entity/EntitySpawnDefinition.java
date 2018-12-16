@@ -15,6 +15,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import vertical_spawn_control.VSCMod;
 
@@ -43,7 +44,10 @@ public class EntitySpawnDefinition {
 			String name = reader.nextName();
 			if(name.equals("class")) {
 				String ename = reader.nextString();
-				entityClass = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(ename)).getEntityClass();
+				EntityEntry rentry = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(ename));
+				if(rentry==null)
+					throw new NullPointerException("No such entity registered: " + ename);
+				entityClass = rentry.getEntityClass();
 				if(entityClass==null)
 					throw new NullPointerException("No such entity registered: " + ename);
 				try {

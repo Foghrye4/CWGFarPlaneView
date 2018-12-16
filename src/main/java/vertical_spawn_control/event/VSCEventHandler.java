@@ -18,11 +18,15 @@ import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.core.server.CubeWatcher;
 import io.github.opencubicchunks.cubicchunks.core.server.PlayerCubeMap;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.nbt.NBTException;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
@@ -30,6 +34,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 import vertical_spawn_control.VSCMod;
 import vertical_spawn_control.entity.SpawnLayer;
+import vertical_spawn_control.entity.ai.EnumEntityAIModificatorAction;
+import vertical_spawn_control.entity.ai.modificator.EntityAIModificator;
 
 public class VSCEventHandler {
 	
@@ -60,16 +66,41 @@ public class VSCEventHandler {
 			}
 		}
 	}
+	
+	@SubscribeEvent
+	public void onSpawn(EntityJoinWorldEvent event) {
+		if(!(event.getEntity() instanceof EntityLiving))
+			return;
+		NBTTagCompound data = event.getEntity().getEntityData();
+		if(!data.hasKey("CustomAI"))
+			return;
+		NBTTagList customAITagList = data.getTagList("CustomAI", 10);
+		for(int i=0;i<customAITagList.tagCount();i++) {
+			EntityAIModificator aiMod = new EntityAIModificator(customAITagList.getCompoundTagAt(i));
+			if(aiMod.action == EnumEntityAIModificatorAction.REMOVE)
+				aiMod.apply((EntityLiving)event.getEntity());
+		}
+		for(int i=0;i<customAITagList.tagCount();i++) {
+			EntityAIModificator aiMod = new EntityAIModificator(customAITagList.getCompoundTagAt(i));
+			if(aiMod.action == EnumEntityAIModificatorAction.ADD)
+				aiMod.apply((EntityLiving)event.getEntity());
+		}
+	}
+
 
 	@SubscribeEvent
 	public void onWorldLoadEvent(WorldEvent.Load event) {
-		if(event.getWorld().provider.getDimension()!=0 || event.getWorld().isRemote)
+		if (event.getWorld().provider.getDimension() != 0 || event.getWorld().isRemote)
 			return;
 		File worldDirectory = event.getWorld().getSaveHandler().getWorldDirectory();
 		File settings = new File(worldDirectory, "./data/" + VSCMod.MODID + "/vertical_spawn_control.json");
-		if(!settings.exists())
+		if (!settings.exists()) {
+			String path1 = settings.getAbsolutePath();
 			settings = new File(worldDirectory, "./vertical_spawn_control.json");
-		if(settings.exists()) {
+			VSCMod.logger
+					.error("No settings provided at " + path1 + " will try to load from " + settings.getAbsolutePath());
+		}
+		if (settings.exists()) {
 			try {
 				this.readFromJSON(settings);
 				VSCMod.logger.info("Loading settings provided at " + settings.getAbsolutePath());
@@ -78,9 +109,8 @@ public class VSCEventHandler {
 			} catch (NBTException e) {
 				e.printStackTrace();
 			}
-		}
-		else {
-			VSCMod.logger.error("No setting provided at " + settings.getAbsolutePath());
+		} else {
+			VSCMod.logger.error("No settings provided at " + settings.getAbsolutePath());
 		}
 	}
 

@@ -111,6 +111,8 @@ public class SpawnLayer {
 		if(player!=null) {
 			return;
 		}
+		if (spawnList.size() == 0)
+			return;
 		Random rand = world.rand;
 		EntitySpawnDefinition def = spawnList.get(rand.nextInt(spawnList.size()));
 		int fromX1 = Math.max(blockPos.getX(), fromX);
