@@ -19,6 +19,7 @@ import net.minecraft.world.WorldEntitySpawner;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraft.entity.*;
+import net.minecraft.entity.EntityLiving.SpawnPlacementType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTException;
 
@@ -133,8 +134,11 @@ public class SpawnLayer {
 			for(int iz = fromZ1+rand.nextInt(5);iz<=toZ1;iz+=rand.nextInt(5) + 1)
 				for(int iy = fromY1+rand.nextInt(ICube.SIZE-1);iy<=toY1;iy++) {
 					pos.setPos(ix, iy, iz);
-					if (!WorldEntitySpawner.canCreatureTypeSpawnAtLocation(EntitySpawnPlacementRegistry
-			                .getPlacementForEntity(def.entityClass), world, pos)) {
+					SpawnPlacementType placementCodition = EntitySpawnPlacementRegistry
+			                .getPlacementForEntity(def.entityClass);
+					if (placementCodition == null)
+						placementCodition = SpawnPlacementType.ON_GROUND;
+					if (!WorldEntitySpawner.canCreatureTypeSpawnAtLocation(placementCodition, world, pos)) {
 						continue;
 					}
 					int light = world.getLight(pos, false);

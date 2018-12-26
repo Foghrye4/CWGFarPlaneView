@@ -1,12 +1,8 @@
 package vertical_spawn_control.entity.ai.modificator;
 
-import java.lang.reflect.Constructor;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.EntityAILeapAtTarget;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -51,14 +47,8 @@ public class EntityAINearestAttackableTargetEntry extends EntityAIEntry {
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		@Override
 		public void addTaskTo(EntityLiving entity) {
-			Constructor<EntityAINearestAttackableTarget> constructor;
-			try {
-				constructor = (Constructor<EntityAINearestAttackableTarget>) aiClass.getConstructor(EntityCreature.class, Class.class, boolean.class);
-				EntityAINearestAttackableTarget aiInstance = constructor.newInstance(entity, target, checkSight);
-				entity.targetTasks.addTask(priority, aiInstance);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			EntityAINearestAttackableTarget aiInstance = new EntityAINearestAttackableTarget((EntityCreature) entity, target, checkSight);
+			entity.targetTasks.addTask(priority, aiInstance);
 		}
 		
 	}
