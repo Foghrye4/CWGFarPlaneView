@@ -8,13 +8,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
 
 import io.github.opencubicchunks.cubicchunks.api.util.Coords;
-import io.github.opencubicchunks.cubicchunks.api.world.CubeWatchEvent;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubeProvider;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
-import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.core.server.CubeWatcher;
 import io.github.opencubicchunks.cubicchunks.core.server.PlayerCubeMap;
 import net.minecraft.entity.Entity;
@@ -23,14 +19,13 @@ import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
 import vertical_spawn_control.VSCMod;
 import vertical_spawn_control.entity.SpawnLayer;
@@ -127,6 +122,8 @@ public class VSCEventHandler {
 	
 	@SubscribeEvent
 	public void onWorldTick(WorldTickEvent event) {
+		if(event.phase != TickEvent.Phase.END)
+			return;
 		ICubicWorld cworld = (ICubicWorld) event.world;
 		if (!cworld.isCubicWorld() || !(cworld instanceof WorldServer))
 			return;

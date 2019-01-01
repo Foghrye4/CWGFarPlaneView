@@ -17,7 +17,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
-import vertical_spawn_control.VSCMod;
 
 public class EntitySpawnDefinition {
 
@@ -25,9 +24,14 @@ public class EntitySpawnDefinition {
 	private java.lang.reflect.Constructor<? extends Entity> ctr;
 	public float chance = 1.0f;
 	public int groupSize = 4;
-	public NBTTagCompound nbt;
+	public NBTTagCompound nbt = new NBTTagCompound();
 	public int minLightLevel = 0;
 	public int maxLightLevel = 16;
+	public int uid = -1;
+	public int spawnLimit = Integer.MAX_VALUE;
+	public boolean limitReached = false;
+	public static int LIMITS_CHECK_FREQUENCY = 50;
+	public int nextlimitCheck = 2;
 	
 	EntitySpawnDefinition(Class<? extends EntityLiving> entityClassIn) {
 		entityClass = entityClassIn;
@@ -60,6 +64,10 @@ public class EntitySpawnDefinition {
 				chance = (float) reader.nextDouble();
 			} else if (name.equals("group_size")) {
 				groupSize = reader.nextInt();
+			} else if (name.equals("uid")) {
+				uid = reader.nextInt();
+			} else if (name.equals("spawn_limit")) {
+				spawnLimit = reader.nextInt();
 			}
 			else if(name.equals("nbt")) {
 				nbt = JsonToNBT.getTagFromJson(reader.nextString());
@@ -80,8 +88,12 @@ public class EntitySpawnDefinition {
 	public boolean spawn(World world, BlockPos pos, @Nullable IEntityLivingData data) {
         try {
             Entity spawnedEntity = ctr.newInstance(world);
-            if(nbt!=null)
-            	spawnedEntity.readFromNBT(nbt);
+			if (uid != -1) {
+				NBTTagCompound forgeData = nbt.getCompoundTag("ForgeData");
+				forgeData.setInteger("VSCSpawnUID", uid);
+				nbt.setTag("ForgeData", forgeData);
+			}
+           	spawnedEntity.readFromNBT(nbt);
             spawnedEntity.setLocationAndAngles(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5, world.rand.nextFloat() * 360.0F, 0.0F);
             if(spawnedEntity instanceof EntityLiving) {
             	data = ((EntityLiving)spawnedEntity).onInitialSpawn(world.getDifficultyForLocation(new BlockPos(spawnedEntity)), data);

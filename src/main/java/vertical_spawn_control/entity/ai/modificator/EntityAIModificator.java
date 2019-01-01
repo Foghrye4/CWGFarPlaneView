@@ -17,6 +17,7 @@ public class EntityAIModificator {
 		aiRegistry.put("leap_at_target", new EntityAILeapAtTargetEntry());
 		aiRegistry.put("attack_melee", new EntityAIAttackMeleeEntry());
 		aiRegistry.put("attack_melee_fixed_damage", new EntityAIAttackMeleeFixedDamageEntry());
+		aiRegistry.put("wander", new EntityAIWanderEntry());
 	}
 
 	public EnumEntityAIModificatorAction action = EnumEntityAIModificatorAction.ADD;
