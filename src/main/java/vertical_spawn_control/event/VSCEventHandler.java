@@ -13,6 +13,8 @@ import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.core.server.CubeWatcher;
 import io.github.opencubicchunks.cubicchunks.core.server.PlayerCubeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.nbt.NBTException;
@@ -35,12 +37,17 @@ import vertical_spawn_control.entity.ai.modificator.EntityAIModificator;
 public class VSCEventHandler {
 	
 	protected int thisTickSpawnAttempts = 0;
-	List<SpawnLayer> spawnLayers = new ArrayList<SpawnLayer>();
+	Int2ObjectMap<List<SpawnLayer>> spawnLayers2Dimension = new Int2ObjectOpenHashMap<List<SpawnLayer>>();
+	
+	public VSCEventHandler() {
+		spawnLayers2Dimension.defaultReturnValue(new ArrayList<SpawnLayer>());
+	}
 	
 	@SubscribeEvent
 	public void onSpawn(LivingSpawnEvent.CheckSpawn event) {
-		if(event.getWorld().provider.getDimension()!=0)
+		if(event.getSpawner()!=null)
 			return;
+		List<SpawnLayer> spawnLayers = spawnLayers2Dimension.get(event.getWorld().provider.getDimension());
 		BlockPos pos = event.getEntity().getPosition();
 		for(SpawnLayer spawnLayer:spawnLayers) {
 			if(spawnLayer.blockNaturalSpawn && spawnLayer.isPosInside(pos)) {
@@ -85,19 +92,20 @@ public class VSCEventHandler {
 
 	@SubscribeEvent
 	public void onWorldLoadEvent(WorldEvent.Load event) {
-		if (event.getWorld().provider.getDimension() != 0 || event.getWorld().isRemote)
+		if (event.getWorld().isRemote)
 			return;
 		File worldDirectory = event.getWorld().getSaveHandler().getWorldDirectory();
-		File settings = new File(worldDirectory, "./data/" + VSCMod.MODID + "/vertical_spawn_control.json");
-		if (!settings.exists()) {
-			String path1 = settings.getAbsolutePath();
-			settings = new File(worldDirectory, "./vertical_spawn_control.json");
-			VSCMod.logger
-					.error("No settings provided at " + path1 + " will try to load from " + settings.getAbsolutePath());
-		}
+		String subfolder = event.getWorld().provider.getSaveFolder();
+		if (subfolder == null)
+			subfolder = "";
+		else
+			subfolder += "/";
+		File settings = new File(worldDirectory,"./" + subfolder + "data/" + VSCMod.MODID + "/vertical_spawn_control.json");
 		if (settings.exists()) {
 			try {
-				this.readFromJSON(settings);
+				List<SpawnLayer> layers = new ArrayList<SpawnLayer>();
+				this.readFromJSON(settings,layers);
+				spawnLayers2Dimension.put(event.getWorld().provider.getDimension(), layers);
 				VSCMod.logger.info("Loading settings provided at " + settings.getAbsolutePath());
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -109,7 +117,7 @@ public class VSCEventHandler {
 		}
 	}
 
-	private void readFromJSON(File file) throws IOException, NBTException {
+	private void readFromJSON(File file, List<SpawnLayer> spawnLayers) throws IOException, NBTException {
 		spawnLayers.clear();
         JsonReader reader = new JsonReader(new FileReader(file));
         reader.setLenient(true);
@@ -124,6 +132,7 @@ public class VSCEventHandler {
 	public void onWorldTick(WorldTickEvent event) {
 		if(event.phase != TickEvent.Phase.END)
 			return;
+		List<SpawnLayer> spawnLayers = spawnLayers2Dimension.get(event.world.provider.getDimension());
 		ICubicWorld cworld = (ICubicWorld) event.world;
 		if (!cworld.isCubicWorld() || !(cworld instanceof WorldServer))
 			return;
