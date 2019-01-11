@@ -20,12 +20,14 @@ import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldEntitySpawner;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
+import vertical_spawn_control.VSCMod;
 
 public class SpawnLayer {
 	int fromX = -100000;
@@ -139,9 +141,8 @@ public class SpawnLayer {
 		int groupSize1 = def.groupSize;
 		if (--def.nextlimitCheck <= 0) {
 			def.nextlimitCheck = EntitySpawnDefinition.LIMITS_CHECK_FREQUENCY;
-			ICubicWorld cworld = (ICubicWorld) world;
-			if (this.calculateEntitiesOfType(cworld.getCubeCache(), def, CubePos.fromBlockCoords(blockPos),
-					new HashSet<CubePos>(), 0, 0) > def.spawnLimit) {
+			int amountOfSpawned = this.calculateEntitiesOfType(world, def, CubePos.fromBlockCoords(blockPos));
+			if (amountOfSpawned > def.spawnLimit) {
 				def.limitReached = true;
 				return;
 			}
@@ -177,49 +178,17 @@ public class SpawnLayer {
 				}
 	}
 
-	private int calculateEntitiesOfType(ICubeProvider cache, EntitySpawnDefinition def, CubePos cubePos,
-			Set<CubePos> checked, int amount, int stackLimit) {
-		if (++stackLimit > 128)
-			return 0;
-		if (cubePos.getMaxBlockX() <= fromX)
-			return 0;
-		if (cubePos.getMaxBlockY() <= fromY)
-			return 0;
-		if (cubePos.getMaxBlockZ() <= fromZ)
-			return 0;
-		if (cubePos.getMinBlockX() > toX)
-			return 0;
-		if (cubePos.getMinBlockY() > toY)
-			return 0;
-		if (cubePos.getMinBlockZ() > toZ)
-			return 0;
-		if (!checked.add(cubePos)) {
-			return 0;
-		}
-		ICube cube = cache.getLoadedCube(cubePos);
-		if (cube == null)
-			return 0;
-		int entitiesOfType = 0;
-		Iterable<? extends Entity> iEntityOfClass = cube.getEntitySet().getByClass(def.entityClass);
-		for (Entity entity : iEntityOfClass) {
-			if (def.uid == -1) {
-				++entitiesOfType;
-			} else {
-				if (entity.getEntityData().hasKey("VSCSpawnUID")
-						&& entity.getEntityData().getInteger("VSCSpawnUID") == def.uid)
-					++entitiesOfType;
-			}
-		}
-		if (amount + entitiesOfType > def.spawnLimit)
-			return entitiesOfType;
-		amount += entitiesOfType;
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(1, 0, 0), checked, amount,stackLimit);
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(-1, 0, 0), checked, amount,stackLimit);
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(0, 0, 1), checked, amount,stackLimit);
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(0, 0, -1), checked, amount,stackLimit);
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(0, 1, 0), checked, amount,stackLimit);
-		entitiesOfType += this.calculateEntitiesOfType(cache, def, cubePos.add(0, -1, 0), checked, amount,stackLimit);
-		return entitiesOfType;
+	private int calculateEntitiesOfType(World world, EntitySpawnDefinition def, CubePos cubePos) {
+		int fromX1 = Math.max(fromX, cubePos.getMinBlockX() - 256);
+		int fromY1 = Math.max(fromY, cubePos.getMinBlockY() - 256);
+		int fromZ1 = Math.max(fromZ, cubePos.getMinBlockZ() - 256);
+		int toX1 = Math.min(toX, cubePos.getMaxBlockX() + 256);
+		int toY1 = Math.min(toY, cubePos.getMaxBlockY() + 256);
+		int toZ1 = Math.min(toZ, cubePos.getMaxBlockZ() + 256);
+		
+		AxisAlignedBB bb = new AxisAlignedBB(fromX1,fromY1,fromZ1,toX1,toY1,toZ1);
+		List<? extends Entity> entities = world.getEntitiesWithinAABB(def.entityClass, bb);
+		return entities.size();
 	}
 
 	public boolean isPosInside(BlockPos position) {
@@ -249,5 +218,10 @@ public class SpawnLayer {
 		if (!biomeWhiteList.isEmpty() && !biomeWhiteList.contains(biome))
 			return false;
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+        return "spawnLayer[" + this.fromX + ", " + this.fromY + ", " + this.fromZ + " -> " + this.toX + ", " + this.toY + ", " + this.toZ + "]";
 	}
 }

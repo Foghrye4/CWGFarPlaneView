@@ -142,26 +142,28 @@ public class VSCEventHandler {
 			return;
 		for (SpawnLayer spawnLayer : spawnLayers) {
 			Iterator<CubeWatcher> cwi = playerCubeMap.getRandomWrappedCubeWatcherIterator(event.world.rand.nextInt());
-			for (int i = 0; i < ssize; i++) {
-				int spawnAttemptsLimit = 16;
-				while (cwi.hasNext() && spawnAttemptsLimit-- > 0) {
-					CubeWatcher cw = cwi.next();
-					int cposX = cw.getX();
-					int cposY = cw.getY();
-					int cposZ = cw.getZ();
-					int posYMin = Coords.cubeToMinBlock(cposY);
-					int posYMax = Coords.cubeToMaxBlock(cposY);
+			int spawnAttempts = 16;
+			while (cwi.hasNext() && --spawnAttempts > 0) {
+				CubeWatcher cw = cwi.next();
+				if (cw.getCube() == null)
+					continue;
+				int cposX = cw.getX();
+				int cposY = cw.getY();
+				int cposZ = cw.getZ();
+				int posYMin = Coords.cubeToMinBlock(cposY);
+				int posYMax = Coords.cubeToMaxBlock(cposY);
 
-					int posXMin = Coords.cubeToMinBlock(cposX);
-					int posXMax = Coords.cubeToMaxBlock(cposX);
+				int posXMin = Coords.cubeToMinBlock(cposX);
+				int posXMax = Coords.cubeToMaxBlock(cposX);
 
-					int posZMin = Coords.cubeToMinBlock(cposZ);
-					int posZMax = Coords.cubeToMaxBlock(cposZ);
-					BlockPos pos = new BlockPos(posXMin, posYMin, posZMin);
-					if (spawnLayer.isIntersectsY(posYMin, posYMax) && spawnLayer.isIntersectsX(posXMin, posXMax)
-							&& spawnLayer.isIntersectsZ(posZMin, posZMax)
-							&& spawnLayer.isEffectiveAtBiomeAtPos(event.world, pos))
-						spawnLayer.onCubeLoad(event.world, pos);
+				int posZMin = Coords.cubeToMinBlock(cposZ);
+				int posZMax = Coords.cubeToMaxBlock(cposZ);
+				BlockPos pos = new BlockPos(posXMin, posYMin, posZMin);
+				if (spawnLayer.isIntersectsY(posYMin, posYMax) && spawnLayer.isIntersectsX(posXMin, posXMax)
+						&& spawnLayer.isIntersectsZ(posZMin, posZMax)
+						&& spawnLayer.isEffectiveAtBiomeAtPos(event.world, pos)) {
+					spawnLayer.onCubeLoad(event.world, pos);
+					break;
 				}
 			}
 		}
