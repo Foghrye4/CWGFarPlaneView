@@ -1,8 +1,8 @@
 [
 {
-  "modid": "vertical_spawn_control",
-  "name": "Vertical spawn control",
-  "description": "Vertical spawn control for Cubic Chunks",
+  "modid": "regencwg",
+  "name": "ReGen CWG",
+  "description": "ReGenerate ores for CubicWorldGen",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",

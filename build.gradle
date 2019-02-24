@@ -11,9 +11,9 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
 
-version = "1.7.7"
-group = "verticalspawncontrol" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "VerticalSpawnControl"
+version = "0.0.1"
+group = "regencwg" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "ReGenCWG"
 
 sourceCompatibility = targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 compileJava {
@@ -25,6 +25,10 @@ repositories {
     maven {
         name = 'sonatype'
         url = 'https://oss.sonatype.org/content/repositories/public/'
+    }
+    maven {
+        name = 'spongepowered'
+        url = 'http://repo.spongepowered.org/maven'
     }
 }
 
@@ -43,10 +47,7 @@ minecraft {
 
 dependencies {
     deobfCompile 'io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT'
-}
-
-jar {
-    exclude 'cubicchunks/**/*'
+    deobfCompile 'io.github.opencubicchunks:cubicworldgen:1.12.2-0.0.39.0-SNAPSHOT'
 }
 
 processResources {
