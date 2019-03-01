@@ -1,12 +1,16 @@
 package regencwg.command;
 
+import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.WorldServer;
+import regencwg.ReGenCWGMod;
 import regencwg.world.WorldSavedDataReGenCWG;
 
 public class ReGenCWGCommand extends CommandBase {
@@ -18,7 +22,7 @@ public class ReGenCWGCommand extends CommandBase {
 
 	@Override
 	public String getUsage(ICommandSender sender) {
-		return getName() + " [remaining|reset|stop] <dimension_id>";
+		return "/"+getName() + " [remaining|reset|stop|finish] <dimension_id>";
 	}
 
 	@Override
@@ -41,15 +45,33 @@ public class ReGenCWGCommand extends CommandBase {
 			WorldServer world = server.getWorld(dimension);
 			WorldSavedDataReGenCWG data = WorldSavedDataReGenCWG.getOrCreateWorldSavedData(world);
 			if(args[0].equals("remaining")) {
-				sender.sendMessage(new TextComponentTranslation("regencwg.remaining",data.getRemaining()));
+				sender.sendMessage(new TextComponentString("Remaining cubes: "+data.getRemaining()));
 			}
 			else if(args[0].equals("reset")) {
 				data.initialize(world);
-				sender.sendMessage(new TextComponentTranslation("regencwg.reset",data.getRemaining()));
+				sender.sendMessage(new TextComponentString("All saved on disk cubes will be repopulated with ores. Remaining cubes: "+data.getRemaining()));
 			} 
 			else if(args[0].equals("stop")) {
-				sender.sendMessage(new TextComponentTranslation("regencwg.stop"));
+				data.stop();
+				sender.sendMessage(new TextComponentString("Repopulation stopped. ReGenCWG will not alter existing cubes."));
 			} 
+			else if(args[0].equals("finish")) {
+				for (Thread t : Thread.getAllStackTraces().keySet()) {
+					if (t.getName().equals("Server Watchdog")) {
+						sender.sendMessage(new TextComponentString(
+								"Watchdog is active. If population process will be interrupted by watchdog, cube data may be corrupted. Restart server with watchdog disabled before launching this command."));
+						return;
+					}
+				}
+				sender.sendMessage(new TextComponentString(
+						"Starting population process. This will take time."));
+				for(CubePos pos:data.remainingCP) {
+					ReGenCWGMod.eventHandler.populate(pos, ((ICubicWorld)world).getCubeFromCubeCoords(pos), world);
+				}
+				data.stop();
+				sender.sendMessage(new TextComponentString(
+						"ReGenCWG: Job is done."));
+			}
 			else {
 				throw new WrongUsageException(getUsage(sender), new Object[0]);
 			}

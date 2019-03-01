@@ -92,4 +92,9 @@ public class WorldSavedDataReGenCWG extends WorldSavedData {
 	public int getRemaining() {
 		return remainingCP.size();
 	}
+
+	public void stop() {
+		remainingCP.clear();
+		this.markDirty();
+	}
 }

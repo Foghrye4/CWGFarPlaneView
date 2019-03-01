@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.CubeWatchEvent;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings.IntAABB;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -58,11 +59,15 @@ public class ReGenCWGEventHandler {
 		WorldSavedDataReGenCWG data = WorldSavedDataReGenCWG.getOrCreateWorldSavedData(world);
 		CubePos pos = event.getCubePos();
 		if(data.remainingCP.remove(pos)) {
-			List<ReGenArea> ores = oresAtDimension.get(world.provider.getDimension());
-			for(ReGenArea area:ores) {
-				area.generateIfInArea(world, pos, event.getCube().getBiome(pos.getCenterBlockPos()));
-			}
-			data.markDirty();
+			this.populate(pos, event.getCube(), world);
+		}
+		data.markDirty();
+	}
+	
+	public void populate(CubePos pos, ICube cube, World world) {
+		List<ReGenArea> ores = oresAtDimension.get(world.provider.getDimension());
+		for(ReGenArea area:ores) {
+			area.generateIfInArea(world, pos, cube.getBiome(pos.getCenterBlockPos()));
 		}
 	}
 	
