@@ -24,17 +24,17 @@ public class DiskDataUtil {
 			path = path.resolve(prov.getSaveFolder());
 		}
 		Path part3d = path.resolve("region3d");
-        try (SaveSection3D cubeIO = new SaveSection3D(
-                new SharedCachedRegionProvider<>(
-                        SimpleRegionProvider.createDefault(new EntryLocation3D.Provider(), part3d, 512)),
-                new SharedCachedRegionProvider<>(new SimpleRegionProvider<>(new EntryLocation3D.Provider(), part3d,
-                        (keyProvider, regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider,
-                                regionKey))))) {
-            cubeIO.forAllKeys(c -> {
-            	posSet.add(new CubePos(c.getEntryX(),c.getEntryY(),c.getEntryZ()));
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		try (SaveSection3D cubeIO = new SaveSection3D(
+				new SharedCachedRegionProvider<>(
+						SimpleRegionProvider.createDefault(new EntryLocation3D.Provider(), part3d, 512)),
+				new SharedCachedRegionProvider<>(new SimpleRegionProvider<>(new EntryLocation3D.Provider(), part3d,
+						(keyProvider, regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider,
+								regionKey))))) {
+			cubeIO.forAllKeys(c -> {
+				posSet.add(new CubePos(c.getEntryX(), c.getEntryY(), c.getEntryZ()));
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

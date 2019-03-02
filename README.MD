@@ -13,9 +13,9 @@ In existing world create folder at path *<world_save_folder>/data/regencwg/* and
 ## What this addon will do
 On a first world load or on running command `/regencwg reset 0 addon` will scan world folder for existing cubes and add coordinates to memory. After further server restarts (or world reloads in client game) addon will use saved data. On every CubeWatchEvent (which is fired whenever cube is needed to be send to client) addon will check if coordinates of cube match set in memory, remove it from set and launch ore generators according preset.
 
-#Block replacing
+# Block replacing
 
-##How to use
+## How to use
 In existing world create folder at path <world_save_folder>/data/regencwg/ and place replace_config.json file where you define what blockstate should be replaced with what blockstate. Download provided example to learn correct syntax: http://www.mediafire.com/file/kqybjlp7jx40ywl/replace_config.json
 Alternatively run command /regencwg replace-config <dimension_id> <config_string>.
 <config_string> is a same string as provided in file, except it should not contain any spaces. After that simply run command /regencwg replace <dimension_id> to start a process.

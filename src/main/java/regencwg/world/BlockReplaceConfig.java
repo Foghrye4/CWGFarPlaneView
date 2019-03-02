@@ -27,7 +27,7 @@ import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import regencwg.world.storage.DiskDataUtil;
 
 public class BlockReplaceConfig {
-	public final Map<IBlockState,IBlockState> replaceMap = new HashMap<IBlockState,IBlockState>();
+	public final Map<IBlockState, IBlockState> replaceMap = new HashMap<IBlockState, IBlockState>();
 
 	public static BlockReplaceConfig fromFile(File rcSettingFile) {
 		BlockReplaceConfig config = new BlockReplaceConfig();
@@ -38,40 +38,38 @@ public class BlockReplaceConfig {
 		}
 		return config;
 	}
-	
+
 	private static void read(Reader sourceReader, BlockReplaceConfig config) {
 		try (JsonReader reader = new JsonReader(sourceReader)) {
-        reader.setLenient(true);
-        reader.beginArray();
-		while (reader.hasNext()) {
-			reader.beginObject();
-			IBlockState searchFor = null;
-			IBlockState replaceWith = Blocks.STONE.getDefaultState();
+			reader.setLenient(true);
+			reader.beginArray();
 			while (reader.hasNext()) {
-				String name = reader.nextName();
-				if (name.equals("search-for")) {
-					NBTTagCompound tag = JsonToNBT.getTagFromJson(readJsonObjectAsString(reader));
-					searchFor = NBTUtil.readBlockState(tag);
+				reader.beginObject();
+				IBlockState searchFor = null;
+				IBlockState replaceWith = Blocks.STONE.getDefaultState();
+				while (reader.hasNext()) {
+					String name = reader.nextName();
+					if (name.equals("search-for")) {
+						NBTTagCompound tag = JsonToNBT.getTagFromJson(readJsonObjectAsString(reader));
+						searchFor = NBTUtil.readBlockState(tag);
+					} else if (name.equals("replace-with")) {
+						NBTTagCompound tag = JsonToNBT.getTagFromJson(readJsonObjectAsString(reader));
+						replaceWith = NBTUtil.readBlockState(tag);
+					} else {
+						reader.skipValue();
+					}
 				}
-				else if (name.equals("replace-with")) {
-					NBTTagCompound tag = JsonToNBT.getTagFromJson(readJsonObjectAsString(reader));
-					replaceWith = NBTUtil.readBlockState(tag);
+				if (searchFor != null) {
+					config.replaceMap.put(searchFor, replaceWith);
 				}
-				else {
-					reader.skipValue();
-				}
+				reader.endObject();
 			}
-			if(searchFor!=null) {
-				config.replaceMap.put(searchFor, replaceWith);
-			}
-			reader.endObject();
-		}
-		reader.endArray();
+			reader.endArray();
 		} catch (IOException | NBTException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static String readJsonObjectAsString(JsonReader reader) throws IOException {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append('{');
@@ -82,7 +80,7 @@ public class BlockReplaceConfig {
 			buffer.append('"');
 			buffer.append(reader.nextString());
 			buffer.append('"');
-			if(reader.hasNext())
+			if (reader.hasNext())
 				buffer.append(',');
 		}
 		reader.endObject();
@@ -94,9 +92,9 @@ public class BlockReplaceConfig {
 		int affectedCubes = 0;
 		Set<CubePos> toReplaceInPosSet = new HashSet<CubePos>();
 		DiskDataUtil.addAllSavedCubePosToSet(world, toReplaceInPosSet);
-		for(CubePos pos:toReplaceInPosSet) {
-			ICube cube = ((ICubicWorld)world).getCubeFromCubeCoords(pos);
-			if(cube.getStorage() == null || cube.getStorage().isEmpty())
+		for (CubePos pos : toReplaceInPosSet) {
+			ICube cube = ((ICubicWorld) world).getCubeFromCubeCoords(pos);
+			if (cube.getStorage() == null || cube.getStorage().isEmpty())
 				continue;
 			ExtendedBlockStorage ebs = cube.getStorage();
 			boolean markDirty = false;
@@ -108,7 +106,7 @@ public class BlockReplaceConfig {
 				ebs.set(i & 15, i >> 8, i >> 4 & 15, bsToReplace);
 				markDirty = true;
 			}
-			if(markDirty) {
+			if (markDirty) {
 				Cube ccube = (Cube) cube;
 				ccube.markDirty();
 				affectedCubes++;
