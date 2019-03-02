@@ -19,7 +19,7 @@ import regencwg.event.ReGenCWGEventHandler;
 public class ReGenCWGMod {
 	public static final String MODID = "regencwg";
 	public static final String NAME = "ReGen CWG";
-	public static final String VERSION = "0.0.2";
+	public static final String VERSION = "0.1.0";
 	public static final String DEPENCIES = "required:cubicchunks@[0.0.928.0,);required:cubicgen@[0.0.39.0,);required:forge@[14.23.3.2658,)";
 
 	public static Logger logger;

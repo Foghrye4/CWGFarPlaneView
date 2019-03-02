@@ -17,6 +17,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldProvider;
 import net.minecraft.world.storage.WorldSavedData;
 import regencwg.ReGenCWGMod;
+import regencwg.world.storage.DiskDataUtil;
 
 public class WorldSavedDataReGenCWG extends WorldSavedData {
 
@@ -28,27 +29,9 @@ public class WorldSavedDataReGenCWG extends WorldSavedData {
 		super(name);
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void initialize(World world) {
 		remainingCP.clear();
-		WorldProvider prov = world.provider;
-		Path path = world.getSaveHandler().getWorldDirectory().toPath();
-		if (prov.getSaveFolder() != null) {
-			path = path.resolve(prov.getSaveFolder());
-		}
-		Path part3d = path.resolve("region3d");
-        try (SaveSection3D cubeIO = new SaveSection3D(
-                new SharedCachedRegionProvider<>(
-                        SimpleRegionProvider.createDefault(new EntryLocation3D.Provider(), part3d, 512)),
-                new SharedCachedRegionProvider<>(new SimpleRegionProvider<>(new EntryLocation3D.Provider(), part3d,
-                        (keyProvider, regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider,
-                                regionKey))))) {
-            cubeIO.forAllKeys(c -> {
-            	remainingCP.add(new CubePos(c.getEntryX(),c.getEntryY(),c.getEntryZ()));
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+		DiskDataUtil.addAllSavedCubePosToSet(world, remainingCP);
 		isInitialized = true;
 		this.markDirty();
 	}

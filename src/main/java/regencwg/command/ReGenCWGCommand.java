@@ -56,12 +56,10 @@ public class ReGenCWGCommand extends CommandBase {
 				sender.sendMessage(new TextComponentString("Repopulation stopped. ReGenCWG will not alter existing cubes."));
 			} 
 			else if(args[0].equals("finish")) {
-				for (Thread t : Thread.getAllStackTraces().keySet()) {
-					if (t.getName().equals("Server Watchdog")) {
-						sender.sendMessage(new TextComponentString(
-								"Watchdog is active. If population process will be interrupted by watchdog, cube data may be corrupted. Restart server with watchdog disabled before launching this command."));
-						return;
-					}
+				if (checkForWatchdog()) {
+					sender.sendMessage(new TextComponentString(
+							"Watchdog is active. If population process will be interrupted by watchdog, cube data may be corrupted. Restart server with watchdog disabled before launching this command."));
+					return;
 				}
 				sender.sendMessage(new TextComponentString(
 						"Starting population process. This will take time."));
@@ -72,10 +70,36 @@ public class ReGenCWGCommand extends CommandBase {
 				sender.sendMessage(new TextComponentString(
 						"ReGenCWG: Job is done."));
 			}
+			else if(args[0].equals("replace")) {
+				if (checkForWatchdog()) {
+					sender.sendMessage(new TextComponentString(
+							"Watchdog is active. If replacing process will be interrupted by watchdog, cube data may be corrupted. Restart server with watchdog disabled before launching this command."));
+					return;
+				}
+				sender.sendMessage(new TextComponentString(
+						"Starting block replacing process. This will take time."));
+				int replaced = ReGenCWGMod.eventHandler.runReplacer(world);
+				sender.sendMessage(
+						new TextComponentString("ReGenCWG: Replacing job is done. " + replaced + " cubes was altered."));
+			}
+			else if(args[0].equals("replace-config")) {
+				if (args.length != 3)
+					throw new WrongUsageException(getUsage(sender), new Object[0]);
+				ReGenCWGMod.eventHandler.addReplacerConfig(dimension,args[2]);
+			}
 			else {
 				throw new WrongUsageException(getUsage(sender), new Object[0]);
 			}
 
 		}
+	}
+	
+	private boolean checkForWatchdog() {
+		for (Thread t : Thread.getAllStackTraces().keySet()) {
+			if (t.getName().equals("Server Watchdog")) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
