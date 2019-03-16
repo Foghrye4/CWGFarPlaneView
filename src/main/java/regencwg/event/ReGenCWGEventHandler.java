@@ -50,10 +50,7 @@ public class ReGenCWGEventHandler {
 			ArrayList<ReGenArea> areas = new ArrayList<ReGenArea>();
 			if (!setting.standardOres.isEmpty() || !setting.periodicGaussianOres.isEmpty())
 				areas.add(new ReGenArea(setting));
-			for (Entry<IntAABB, CustomGeneratorSettings> entry : setting.cubeAreas.entrySet()) {
-				if (!entry.getValue().standardOres.isEmpty() || !entry.getValue().periodicGaussianOres.isEmpty())
-					areas.add(new ReGenArea(entry.getKey(), entry.getValue()));
-			}
+			this.addReGenAreasToList(areas, setting);
 			oresAtDimension.put(event.getWorld().provider.getDimension(), areas);
 			if (!data.isInitialized()) {
 				data.initialize(world);
@@ -66,6 +63,15 @@ public class ReGenCWGEventHandler {
 				blockReplaceConfigAtDimension.put(event.getWorld().provider.getDimension(), brc);
 			}
 		}
+	}
+	
+	private void addReGenAreasToList(List<ReGenArea> areas, CustomGeneratorSettings setting) {
+		for (Entry<IntAABB, CustomGeneratorSettings> entry : setting.cubeAreas.entrySet()) {
+			if (!entry.getValue().standardOres.isEmpty() || !entry.getValue().periodicGaussianOres.isEmpty())
+				areas.add(new ReGenArea(entry.getKey(), entry.getValue()));
+			this.addReGenAreasToList(areas, entry.getValue());
+		}
+
 	}
 
 	@SubscribeEvent
