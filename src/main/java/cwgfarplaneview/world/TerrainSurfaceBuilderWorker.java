@@ -12,13 +12,18 @@ import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
+
+	public final static int MAX_UPDATE_DISTANCE = 92;
 
 	private final WorldServer worldServer;
 	private final WorldSavedDataTerrainSurface data;
@@ -40,10 +45,11 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			flush = false;
 			return;
 		}
-		if(data.lock) {
+		if (data.lock) {
 			try {
 				Thread.sleep(1000L);
-			} catch (InterruptedException e) {}
+			} catch (InterruptedException e) {
+			}
 			return;
 		}
 		int dx = data.maximalX - data.minimalX;
@@ -52,21 +58,18 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			dz++;
 		}
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
-		if (dx < dz) {
-			int x = data.maximalX < -data.minimalX ? data.maximalX + 1 : data.minimalX - 1;
-			for (int z = data.minimalZ; z <= data.maximalZ; z++) {
-				TerrainPoint point = this.getTerrainPointAt(x, z, heightHint);
-				heightHint = point.blockY;
-				data.addToMap(point);
-				pointsList.add(point);
-			}
-		} else {
-			int z = data.maximalZ < -data.minimalZ ? data.maximalZ + 1 : data.minimalZ - 1;
-			for (int x = data.minimalX; x <= data.maximalX; x++) {
-				TerrainPoint point = this.getTerrainPointAt(x, z, heightHint);
-				heightHint = point.blockY;
-				data.addToMap(point);
-				pointsList.add(point);
+		EnumFacing closestSide = getSideClosestToPlayer();
+		if (closestSide != EnumFacing.UP) {
+			if (closestSide.getAxis() == Axis.X) {
+				int x = closestSide == EnumFacing.EAST ? data.maximalX + 1 : data.minimalX - 1;
+				for (int z = data.minimalZ; z <= data.maximalZ; z++) {
+					this.generatePoint(pointsList, x, z);
+				}
+			} else {
+				int z = closestSide == EnumFacing.SOUTH ? data.maximalZ + 1 : data.minimalZ - 1;
+				for (int x = data.minimalX; x <= data.maximalX; x++) {
+					this.generatePoint(pointsList, x, z);
+				}
 			}
 		}
 		if (!reciveAllPointsRequests.isEmpty()) {
@@ -77,6 +80,29 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		} else {
 			if (!worldServer.playerEntities.isEmpty())
 				network.sendTerrainPointsToAllClients(pointsList);
+		}
+	}
+	
+	private void generatePoint(List<TerrainPoint> pointsList, int x, int z) {
+		TerrainPoint point = this.getTerrainPointAt(x, z, heightHint);
+		heightHint = point.blockY;
+		data.addToMap(point);
+		pointsList.add(point);
+	}
+
+	private EnumFacing getSideClosestToPlayer() {
+		int dx = data.maximalX - data.minimalX;
+		int dz = data.maximalZ - data.minimalZ;
+		if (dx > MAX_UPDATE_DISTANCE * 2 && dz > MAX_UPDATE_DISTANCE * 2)
+			return EnumFacing.UP;
+		if (dx < dz) {
+			if (data.maximalX < -data.minimalX)
+				return EnumFacing.EAST;
+			return EnumFacing.WEST;
+		} else {
+			if (data.maximalZ < -data.minimalZ)
+				return EnumFacing.SOUTH;
+			return EnumFacing.NORTH;
 		}
 	}
 
@@ -96,22 +122,20 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 					continue;
 				}
 				int height = (y << 4) + --iy + 1;
-				return new TerrainPoint(x, z, height, primer.getBlockState(0, iy, 0),
-						getBiomeAt(x, z));
+				return new TerrainPoint(x, z, height, primer.getBlockState(0, iy, 0), getBiomeAt(x, z));
 			}
 		}
 		int height = (y + 1 << 4) + 1;
-		return new TerrainPoint(x, z, height, primer.getBlockState(0, 15, 0),
-				getBiomeAt(x, z));
+		return new TerrainPoint(x, z, height, primer.getBlockState(0, 15, 0), getBiomeAt(x, z));
 	}
-	
+
 	private boolean isAirOrWater(IBlockState state) {
 		return state == Blocks.AIR.getDefaultState() || state.getMaterial() == Material.WATER;
 	}
-	
+
 	private Biome getBiomeAt(int x, int z) {
 		Biome[] biomes = new Biome[256];
-		worldServer.getBiomeProvider().getBiomes(biomes, x<<4, z<<4, 16, 16, false);
+		worldServer.getBiomeProvider().getBiomes(biomes, x << 4, z << 4, 16, 16, false);
 		return biomes[0];
 	}
 
