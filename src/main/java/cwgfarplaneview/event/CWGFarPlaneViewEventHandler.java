@@ -25,7 +25,7 @@ public class CWGFarPlaneViewEventHandler {
 		World world = event.getWorld();
 		if (world.isRemote || !(world instanceof WorldServer))
 			return;
-		if (world.provider.getDimension() != 0)
+		if (world.provider.getDimension() != 0 || !world.getWorldType().getName().equals("CustomCubic"))
 			return;
 		worker = new TerrainSurfaceBuilderWorker((WorldServer) world);
 		Thread thread = new Thread(worker, "Terrain surface builder worker");

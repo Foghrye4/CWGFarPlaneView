@@ -21,7 +21,7 @@ public class CWGFarPlaneViewMod {
 	public static final String MODID = "cwgfarplaneview";
 	public static final String NAME = "CWG Far plane view";
 	public static final String VERSION = "0.1.2";
-	public static final String DEPENCIES = "required:cubicchunks@[0.0.938.0,);required:cubicgen@[0.0.39.0,);required:forge@[14.23.3.2658,)";
+	public static final String DEPENCIES = "required:cubicchunks@[0.0.938.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)";
 	
 	@SidedProxy(clientSide = "cwgfarplaneview.ClientProxy", serverSide = "cwgfarplaneview.ServerProxy")
 	public static ServerProxy proxy;

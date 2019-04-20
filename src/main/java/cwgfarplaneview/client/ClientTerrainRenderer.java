@@ -6,6 +6,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
 import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.world.TerrainSurfaceBuilderWorker;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
@@ -34,7 +35,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ClientTerrainRenderer extends IRenderHandler implements IBlockAccess {
 	private static final ResourceLocation TERRAIN_TEXTURE = new ResourceLocation(MODID,
 			"textures/terrain/white_noise.png");
-	private static final int HORIZONT_DISTANCE = 64;
+	private static final int HORIZONT_DISTANCE = TerrainSurfaceBuilderWorker.MAX_UPDATE_DISTANCE - 32;
 	private static final int HORIZONT_DISTANCE_BLOCKS = HORIZONT_DISTANCE << 4;
 	private static final int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE * HORIZONT_DISTANCE;
 	private static final float CLOSE_PLANE = 16.0f;
@@ -147,6 +148,8 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 
 	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {
 		Block block = state.getBlock();
+		if(biome.isSnowyBiome())
+			return 0xf0fbfb;
 		if (block == Blocks.GRASS)
 			return biome.getGrassColorAtPos(pos);
 		if (block == Blocks.STONE)
