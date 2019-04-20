@@ -1,4 +1,4 @@
-package regencwg.world.storage;
+package cwgfarplaneview.world.storage;
 
 import java.io.IOException;
 import java.nio.file.Path;

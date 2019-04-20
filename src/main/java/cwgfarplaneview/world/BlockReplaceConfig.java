@@ -1,4 +1,4 @@
-package regencwg.world;
+package cwgfarplaneview.world;
 
 import java.io.File;
 import java.io.FileReader;
@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.google.gson.stream.JsonReader;
 
+import cwgfarplaneview.world.storage.DiskDataUtil;
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
@@ -24,7 +25,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import regencwg.world.storage.DiskDataUtil;
 
 public class BlockReplaceConfig {
 	public final Map<IBlockState, IBlockState> replaceMap = new HashMap<IBlockState, IBlockState>();

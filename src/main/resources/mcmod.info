@@ -1,8 +1,8 @@
 [
 {
-  "modid": "regencwg",
-  "name": "ReGen CWG",
-  "description": "ReGenerate ores for CubicWorldGen",
+  "modid": "cwgfarplaneview",
+  "name": "CWG Far plane view",
+  "description": "Far plane view for CubicWorldGen",
   "version": "${version}",
   "mcversion": "${mcversion}",
   "url": "",
