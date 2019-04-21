@@ -1,7 +1,5 @@
 package cwgfarplaneview;
 
-import java.util.Map;
-
 import org.apache.logging.log4j.Logger;
 
 import cwgfarplaneview.command.CWGFarPlaneViewCommand;
@@ -13,8 +11,6 @@ import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import net.minecraftforge.fml.common.network.NetworkCheckHandler;
-import net.minecraftforge.fml.relauncher.Side;
 
 @Mod(modid = CWGFarPlaneViewMod.MODID, name = CWGFarPlaneViewMod.NAME, version = CWGFarPlaneViewMod.VERSION, dependencies = CWGFarPlaneViewMod.DEPENCIES)
 public class CWGFarPlaneViewMod {

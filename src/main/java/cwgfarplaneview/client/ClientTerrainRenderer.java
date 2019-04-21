@@ -1,9 +1,7 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
-import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MAX_UPDATE_DISTANCE_CHUNKS;
-import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MESH_SIZE_BIT_BLOCKS;
-import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.AddressUtil.*;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;

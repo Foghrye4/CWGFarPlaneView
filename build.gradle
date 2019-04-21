@@ -43,6 +43,17 @@ minecraft {
     // simply re-run your setup task after changing the mappings to update your workspace.
     mappings = "snapshot_20171003"
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+    
+    def args = [
+            "-Dfml.coreMods.load=cwgfarplaneview.core.CWGFarPlaneViewCoreMod", //the core mod class
+            "-XX:-OmitStackTraceInFastThrow", //without this sometimes you end up with exception with empty stacktrace
+            "-Dfml.noGrab=false", //change to disable Minecraft taking control over mouse
+            "-ea", //enable assertions
+            "-da:io.netty..." //disable netty assertions because they sometimes fail
+    ]
+
+    clientJvmArgs += args
+    serverJvmArgs += args
 }
 
 dependencies {
@@ -68,3 +79,50 @@ processResources {
         exclude 'mcmod.info'
     }
 }
+
+// Define a new task for the contained JAR
+// If you want to, you can distribute this as a separate artifact to a Maven
+task coreJar(type: Jar) {
+    // Copy all compiled files and resources from the source set to the JAR
+    // If you have additional source sets, add the same logic here
+    from(sourceSets.main.output) {
+        // Include the coremod package
+        // If you need additional files, add some more includes
+        include 'cwgfarplaneview/core/**'
+    }
+    // Standard coremod manifest definitions
+    manifest {
+        // Added benefit of separating mod and coremod: No need for FMLCorePluginContainsFMLMod
+        attributes 'FMLCorePlugin': "cwgfarplaneview.core.CWGFarPlaneViewCoreMod"
+        // Strictly speaking not required (right now)
+        // Allows Forge to extract the dependency to a local repository (Given that the corresponding PR is merged)
+        // If another mod ships the same dependency, it doesn't have to be extracted twice
+        attributes 'Maven-Version': "${project.group}:${project.archivesBaseName}:${project.version}:core"
+    }
+    // Add a classifier to the JAR ('-mod' at the end of the file name)
+    // Distinguishes the mod JAR from the shipped one
+    classifier 'core'
+}
+
+// Reobfuscate the output of the mod JAR task with SRG names, otherwise the mod won't be able to reference MC classes
+reobf {
+    coreJar { mappingType = 'SEARGE' }
+}
+
+// Use the standard JAR task as container for the main jar and the contained dependency (the coremod)
+jar {
+    // Don't include the coremod in the main JAR
+    // If you have more coremod-related packages that aren't nested in the main one, add inclusions for them
+    exclude 'cwgfarplaneview/core/**'
+    // Add the output of the coremod JAR task to the main JAR for later extraction
+    from(coreJar.archivePath.absolutePath) {
+        include '*' // Due to the way Gradle's copy tasks work, we need this line for the JAR to get added
+    }
+    manifest {
+        // The crucial manifest attribute: Make Forge extract the contained JAR
+        attributes 'ContainedDeps': coreJar.archivePath.name
+    }
+    // Only run the main jar task after the coremod JAR was completely built
+    dependsOn reobfCoreJar
+}
+

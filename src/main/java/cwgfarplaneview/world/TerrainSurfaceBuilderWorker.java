@@ -1,6 +1,9 @@
 package cwgfarplaneview.world;
 
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
+import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
+import static cwgfarplaneview.CWGFarPlaneViewMod.network;
+import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CHUNKS;
+import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,9 +16,7 @@ import javax.annotation.Nullable;
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
+import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -28,10 +29,6 @@ import net.minecraft.world.biome.Biome;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
 
-	public final static int MESH_SIZE_BIT_CHUNKS = 0;
-	public final static int MESH_SIZE_BIT_BLOCKS = MESH_SIZE_BIT_CHUNKS + 4;
-	public final static int MAX_UPDATE_DISTANCE_CHUNKS = 92 << MESH_SIZE_BIT_CHUNKS;
-
 	private final WorldServer worldServer;
 	private final WorldSavedDataTerrainSurface data;
 	private ICubeGenerator generator;
@@ -40,20 +37,18 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	private boolean flush = false;
 	private final List<EntityPlayerMP> reciveAllPointsRequests = new ArrayList<EntityPlayerMP>();
 	private final Set<EntityPlayerMP> players = new HashSet<EntityPlayerMP>();
-			
-	public TerrainSurfaceBuilderWorker(WorldServer worldServerIn) {
+
+	public TerrainSurfaceBuilderWorker(WorldServer worldServerIn, WorldSavedDataTerrainSurface dataIn) {
 		worldServer = worldServerIn;
-		logger.info("Memory before data init:" + getMemory());
-		data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(worldServerIn);
-		logger.info("Memory before generator init:" + getMemory());
-		CustomGeneratorSettings settings = CustomGeneratorSettings.load(worldServerIn);
-		generator = new CustomTerrainGenerator(worldServerIn, CustomCubicWorldType.makeBiomeProvider(worldServerIn, settings), settings, worldServerIn.getSeed());
+		data = dataIn;
+		CubeProviderServer cubeProvider = (CubeProviderServer) worldServerIn.getChunkProvider();
+		generator = cubeProvider.getCubeGenerator();
 		System.gc();
-		logger.info("Memory after gc:" + getMemory());
+		logger.info("Surface builder worker initialized");
 	}
-	
+
 	private long getMemory() {
-		return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024;
+		return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024;
 	}
 
 	public void tick() {
@@ -86,6 +81,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 					this.generatePoint(pointsList, x, z);
 				}
 			}
+			closestSide = getSideClosestToPlayer();
 		}
 		if (!reciveAllPointsRequests.isEmpty()) {
 			for (EntityPlayerMP player : reciveAllPointsRequests) {
@@ -94,11 +90,11 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			players.addAll(reciveAllPointsRequests);
 			reciveAllPointsRequests.clear();
 		}
-		if (!worldServer.playerEntities.isEmpty()) {
+		if (!worldServer.playerEntities.isEmpty() && !pointsList.isEmpty()) {
 			network.sendTerrainPointsToAllClients(pointsList);
 		}
 	}
-	
+
 	private void generatePoint(List<TerrainPoint> pointsList, int x, int z) {
 		TerrainPoint point = this.getTerrainPointAt(x, z, heightHint);
 		heightHint = point.blockY;
@@ -154,7 +150,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		int minXZ = Integer.MAX_VALUE;
 		EntityPlayer closestPlayer = null;
 		Iterator<EntityPlayerMP> pi = players.iterator();
-		while(pi.hasNext()) {
+		while (pi.hasNext()) {
 			EntityPlayerMP player = pi.next();
 			if (player == null || player.isDead || !(player instanceof EntityPlayerMP)) {
 				pi.remove();
