@@ -90,7 +90,6 @@ public class ServerNetworkHandler {
 			byteBufOutputStream.writeInt(Biome.getIdForBiome(tp.biome));
 		}
 		getChannel().sendToAll(new FMLProxyPacket(byteBufOutputStream, MODID));
-		byteBufOutputStream.release();
 	}
 
 	public void sendCommandFlush() {
@@ -98,7 +97,6 @@ public class ServerNetworkHandler {
 		PacketBuffer byteBufOutputStream = new PacketBuffer(bb);
 		byteBufOutputStream.writeByte(ClientCommands.FLUSH.ordinal());
 		getChannel().sendToAll(new FMLProxyPacket(byteBufOutputStream, MODID));
-		byteBufOutputStream.release();
 	}
 
 	public void sendAllTerrainPointsToClient(EntityPlayerMP player, XZMap<TerrainPoint> tps) {
@@ -114,7 +112,6 @@ public class ServerNetworkHandler {
 			byteBufOutputStream.writeInt(Biome.getIdForBiome(tp.biome));
 		}
 		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
-		byteBufOutputStream.release();
 	}
 	
 	public void sendSeaLevel(EntityPlayerMP player, int seaLevel) {
@@ -123,6 +120,5 @@ public class ServerNetworkHandler {
 		byteBufOutputStream.writeByte(ClientCommands.RECIEVE_SEA_LEVEL.ordinal());
 		byteBufOutputStream.writeInt(seaLevel);
 		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
-		byteBufOutputStream.release();
 	}
 }

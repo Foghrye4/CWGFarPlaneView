@@ -59,6 +59,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 		default:
 			break;
 		}
+		byteBufInputStream.release();
 	}
 
 	public void sendCommand(ServerCommands command) {

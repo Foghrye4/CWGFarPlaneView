@@ -1,6 +1,6 @@
 package cwgfarplaneview.world;
 
-import static cwgfarplaneview.CWGFarPlaneViewMod.network;
+import static cwgfarplaneview.CWGFarPlaneViewMod.*;
 import static cwgfarplaneview.CWGFarPlaneViewMod.proxy;
 
 import java.util.ArrayList;
@@ -20,7 +20,6 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGenerato
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
@@ -31,6 +30,7 @@ import net.minecraft.world.biome.Biome;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
 
+	public final static int MESH_SIZE_BIT = 8;
 	public final static int MAX_UPDATE_DISTANCE = 92;
 
 	private final WorldServer worldServer;
@@ -44,9 +44,17 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			
 	public TerrainSurfaceBuilderWorker(WorldServer worldServerIn) {
 		worldServer = worldServerIn;
+		logger.info("Memory before data init:" + getMemory());
 		data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(worldServerIn);
+		logger.info("Memory before generator init:" + getMemory());
 		CustomGeneratorSettings settings = CustomGeneratorSettings.load(worldServerIn);
 		generator = new CustomTerrainGenerator(worldServerIn, CustomCubicWorldType.makeBiomeProvider(worldServerIn, settings), settings, worldServerIn.getSeed());
+		System.gc();
+		logger.info("Memory after gc:" + getMemory());
+	}
+	
+	private long getMemory() {
+		return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())/1024;
 	}
 
 	public void tick() {
@@ -64,7 +72,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		}
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
 		EnumFacing closestSide = getSideClosestToPlayer();
-		while (closestSide != EnumFacing.UP && pointsList.size() < 4096) {
+		while (closestSide != EnumFacing.UP && pointsList.size() < 40960) {
 			if (closestSide.getAxis() == Axis.X) {
 				int x = closestSide == EnumFacing.EAST ? data.maximalX + 1 : data.minimalX - 1;
 				for (int z = data.minimalZ; z <= data.maximalZ; z++) {
