@@ -1,12 +1,14 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
+import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MAX_UPDATE_DISTANCE_CHUNKS;
+import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MESH_SIZE_BIT_BLOCKS;
+import static cwgfarplaneview.world.TerrainSurfaceBuilderWorker.MESH_SIZE_BIT_CHUNKS;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
 import cwgfarplaneview.world.TerrainPoint;
-import cwgfarplaneview.world.TerrainSurfaceBuilderWorker;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
@@ -20,32 +22,28 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.init.Blocks;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-public class ClientTerrainRenderer extends IRenderHandler implements IBlockAccess {
+public class ClientTerrainRenderer extends IRenderHandler {
 	private static final ResourceLocation TERRAIN_TEXTURE = new ResourceLocation(MODID,
 			"textures/terrain/white_noise.png");
-	private static final int HORIZONT_DISTANCE = TerrainSurfaceBuilderWorker.MAX_UPDATE_DISTANCE - 32;
-	private static final int HORIZONT_DISTANCE_BLOCKS = HORIZONT_DISTANCE << 4;
-	private static final int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE * HORIZONT_DISTANCE;
+	private static final int HORIZONT_DISTANCE_CHUNKS = MAX_UPDATE_DISTANCE_CHUNKS - (32 << MESH_SIZE_BIT_CHUNKS);
+	private static final int HORIZONT_DISTANCE_BLOCKS = HORIZONT_DISTANCE_CHUNKS << 4;
+	private static final int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE_CHUNKS * HORIZONT_DISTANCE_CHUNKS;
 	private static final float CLOSE_PLANE = 16.0f;
 	private static final float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
 
 	private XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
-	int minimalX = -4;
-	int minimalZ = -4;
-	int maximalX = 4;
-	int maximalZ = 4;
+	int minimalXMesh = -4;
+	int minimalZMesh = -4;
+	int maximalXMesh = 4;
+	int maximalZMesh = 4;
 	private float fov = 70.0f;
 	private int seaLevel = 64;
 	private boolean needUpdate = true;
@@ -106,8 +104,8 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
-		for (int x = minimalX; x <= maximalX; x++) {
-			for (int z = minimalZ; z <= maximalZ; z++) {
+		for (int x = minimalXMesh; x <= maximalXMesh; x++) {
+			for (int z = minimalZMesh; z <= maximalZMesh; z++) {
 				this.addQuad(worldRendererIn, world, x, z);
 			}
 		}
@@ -124,8 +122,8 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 	}
 
 	private void addVector(BufferBuilder worldRendererIn, WorldClient world, int x, int z, float u, float v) {
-		int bx = x << 4;
-		int bz = z << 4;
+		int bx = x << MESH_SIZE_BIT_BLOCKS;
+		int bz = z << MESH_SIZE_BIT_BLOCKS;
 		int height = 0;
 		int color = 0x00FF00;
 		float red = 0.0f;
@@ -148,7 +146,7 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 
 	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {
 		Block block = state.getBlock();
-		if(biome.isSnowyBiome())
+		if (biome.isSnowyBiome() || biome.getTemperature(pos) < 0.15f)
 			return 0xf0fbfb;
 		if (block == Blocks.GRASS)
 			return biome.getGrassColorAtPos(pos);
@@ -185,22 +183,22 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 
 	public void addToMap(TerrainPoint value) {
 		terrainMap.put(value);
-		if (value.getX() < this.minimalX)
-			this.minimalX = value.getX();
-		if (value.getZ() < this.minimalZ)
-			this.minimalZ = value.getZ();
-		if (value.getX() > this.maximalX)
-			this.maximalX = value.getX();
-		if (value.getZ() > this.maximalZ)
-			this.maximalZ = value.getZ();
+		if (value.getX() < this.minimalXMesh)
+			this.minimalXMesh = value.getX();
+		if (value.getZ() < this.minimalZMesh)
+			this.minimalZMesh = value.getZ();
+		if (value.getX() > this.maximalXMesh)
+			this.maximalXMesh = value.getX();
+		if (value.getZ() > this.maximalZMesh)
+			this.maximalZMesh = value.getZ();
 
 		EntityPlayerSP player = Minecraft.getMinecraft().player;
 		int renderPosX = (int) (player.lastTickPosX);
 		int renderPosZ = (int) (player.lastTickPosZ);
 		renderPosX >>= 4;
 		renderPosZ >>= 4;
-		int dx = renderPosX - value.getX();
-		int dz = renderPosZ - value.getZ();
+		int dx = renderPosX - (value.getX() << MESH_SIZE_BIT_CHUNKS);
+		int dz = renderPosZ - (value.getZ() << MESH_SIZE_BIT_CHUNKS);
 		if (dx * dx < HORIZONT_DISTANCE_SQ || dz * dz < HORIZONT_DISTANCE_SQ) {
 			needUpdate = true;
 		}
@@ -208,55 +206,12 @@ public class ClientTerrainRenderer extends IRenderHandler implements IBlockAcces
 
 	public void clear() {
 		terrainMap.clear();
-		minimalX = 0;
-		minimalZ = 0;
-		maximalX = 0;
-		maximalZ = 0;
+		minimalXMesh = 0;
+		minimalZMesh = 0;
+		maximalXMesh = 0;
+		maximalZMesh = 0;
 	}
-
-	@Override
-	public TileEntity getTileEntity(BlockPos pos) {
-		return null;
-	}
-
-	@Override
-	public int getCombinedLight(BlockPos pos, int lightValue) {
-		return 0;
-	}
-
-	@Override
-	public IBlockState getBlockState(BlockPos pos) {
-		return null;
-	}
-
-	@Override
-	public boolean isAirBlock(BlockPos pos) {
-		return false;
-	}
-
-	@Override
-	public Biome getBiome(BlockPos pos) {
-		TerrainPoint point = terrainMap.get(pos.getX() >> 4, pos.getZ() >> 4);
-		if (point != null)
-			return point.biome;
-		return Biome.getBiome(0);
-	}
-
-	@Override
-	public int getStrongPower(BlockPos pos, EnumFacing direction) {
-		return 0;
-	}
-
-	@Override
-	public WorldType getWorldType() {
-		return null;
-	}
-
-	@Override
-	public boolean isSideSolid(BlockPos pos, EnumFacing side, boolean _default) {
-		return false;
-	}
-
+	
 	public void setSeaLevel(int seaLevelIn) {
 		seaLevel = seaLevelIn;
 	}

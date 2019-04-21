@@ -1,7 +1,6 @@
 package cwgfarplaneview.world;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.*;
-import static cwgfarplaneview.CWGFarPlaneViewMod.proxy;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,7 +10,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import cwgfarplaneview.ClientProxy;
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
@@ -30,8 +28,9 @@ import net.minecraft.world.biome.Biome;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
 
-	public final static int MESH_SIZE_BIT = 8;
-	public final static int MAX_UPDATE_DISTANCE = 92;
+	public final static int MESH_SIZE_BIT_CHUNKS = 0;
+	public final static int MESH_SIZE_BIT_BLOCKS = MESH_SIZE_BIT_CHUNKS + 4;
+	public final static int MAX_UPDATE_DISTANCE_CHUNKS = 92 << MESH_SIZE_BIT_CHUNKS;
 
 	private final WorldServer worldServer;
 	private final WorldSavedDataTerrainSurface data;
@@ -59,7 +58,10 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 
 	public void tick() {
 		if (flush) {
+			logger.info("Clearing data. Memory before:" + getMemory());
 			data.clear();
+			System.gc();
+			logger.info("Clearing data. Memory after:" + getMemory());
 			flush = false;
 			return;
 		}
@@ -72,7 +74,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		}
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
 		EnumFacing closestSide = getSideClosestToPlayer();
-		while (closestSide != EnumFacing.UP && pointsList.size() < 40960) {
+		while (closestSide != EnumFacing.UP && pointsList.size() < 4096) {
 			if (closestSide.getAxis() == Axis.X) {
 				int x = closestSide == EnumFacing.EAST ? data.maximalX + 1 : data.minimalX - 1;
 				for (int z = data.minimalZ; z <= data.maximalZ; z++) {
@@ -127,12 +129,12 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 				minXZ = pccX - data.minimalZ;
 				closestSide = EnumFacing.NORTH;
 			}
-			if (minXZ > MAX_UPDATE_DISTANCE)
+			if (minXZ > MAX_UPDATE_DISTANCE_CHUNKS)
 				return EnumFacing.UP;
 		} else {
 			int dx = data.maximalX - data.minimalX;
 			int dz = data.maximalZ - data.minimalZ;
-			if (dx > MAX_UPDATE_DISTANCE * 2 && dz > MAX_UPDATE_DISTANCE * 2)
+			if (dx > MAX_UPDATE_DISTANCE_CHUNKS * 2 && dz > MAX_UPDATE_DISTANCE_CHUNKS * 2)
 				return EnumFacing.UP;
 			if (dx < dz) {
 				if (data.maximalX < -data.minimalX)
@@ -180,27 +182,29 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		return closestPlayer;
 	}
 
-	private TerrainPoint getTerrainPointAt(int x, int z, int heightHint) {
-		int y = heightHint >> 4;
-		CubePrimer primer = generator.generateCube(x, y, z);
+	private TerrainPoint getTerrainPointAt(int meshX, int meshZ, int heightHint) {
+		int cubeY = heightHint >> 4;
+		int cubeX = meshX << MESH_SIZE_BIT_CHUNKS;
+		int cubeZ = meshZ << MESH_SIZE_BIT_CHUNKS;
+		CubePrimer primer = generator.generateCube(cubeX, cubeY, cubeZ);
 		while (isAirOrWater(primer.getBlockState(0, 0, 0))) {
-			primer = generator.generateCube(x, --y, z);
+			primer = generator.generateCube(cubeX, --cubeY, cubeZ);
 		}
 		while (!isAirOrWater(primer.getBlockState(0, 15, 0))) {
-			primer = generator.generateCube(x, ++y, z);
+			primer = generator.generateCube(cubeX, ++cubeY, cubeZ);
 		}
 		for (int iy = 0; iy < 16; iy++) {
 			if (isAirOrWater(primer.getBlockState(0, iy, 0))) {
 				if (iy == 0) {
-					primer = generator.generateCube(x, --y, z);
+					primer = generator.generateCube(cubeX, --cubeY, cubeZ);
 					continue;
 				}
-				int height = (y << 4) + --iy + 1;
-				return new TerrainPoint(x, z, height, primer.getBlockState(0, iy, 0), getBiomeAt(x, z));
+				int height = (cubeY << 4) + --iy + 1;
+				return new TerrainPoint(meshX, meshZ, height, primer.getBlockState(0, iy, 0), getBiomeAt(cubeX, cubeZ));
 			}
 		}
-		int height = (y + 1 << 4) + 1;
-		return new TerrainPoint(x, z, height, primer.getBlockState(0, 15, 0), getBiomeAt(x, z));
+		int height = (cubeY + 1 << 4) + 1;
+		return new TerrainPoint(meshX, meshZ, height, primer.getBlockState(0, 15, 0), getBiomeAt(cubeX, cubeZ));
 	}
 
 	private boolean isAirOrWater(IBlockState state) {
