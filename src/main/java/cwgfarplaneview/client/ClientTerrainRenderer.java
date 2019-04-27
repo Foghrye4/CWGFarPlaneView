@@ -147,7 +147,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		if (biome.isSnowyBiome() || biome.getTemperature(pos) < 0.15f)
 			return 0xf0fbfb;
 		if (block == Blocks.GRASS)
-			return biome.getGrassColorAtPos(pos);
+			return multiplyColors(0x979797, biome.getGrassColorAtPos(pos));
 		if (block == Blocks.STONE)
 			return 0x7d7d7d;
 		if (block == Blocks.CLAY)
@@ -171,7 +171,20 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		}
 		if (block == Blocks.SNOW)
 			return 0xf0fbfb;
-		return biome.getGrassColorAtPos(BlockPos.ORIGIN);
+		return multiplyColors(0x979797, biome.getGrassColorAtPos(BlockPos.ORIGIN));
+	}
+	
+	private int multiplyColors(int color1, int color2) {
+		int red1 = color1 >>> 16;
+		int green1 = color1 >>> 8 & 0xFF;
+		int blue1 = color1 & 0xFF;
+		int red2 = color2 >>> 16;
+		int green2 = color2 >>> 8 & 0xFF;
+		int blue2 = color2 & 0xFF;
+		int red = red1 * red2 / 255;
+		int green = green1 * green2 / 255;
+		int blue = blue1 * blue2 / 255;
+		return red << 16 | green << 8 | blue;
 	}
 
 	@SubscribeEvent
