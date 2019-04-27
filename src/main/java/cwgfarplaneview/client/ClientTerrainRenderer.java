@@ -36,6 +36,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private static final int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE_CHUNKS * HORIZONT_DISTANCE_CHUNKS;
 	private static final float CLOSE_PLANE = 16.0f;
 	private static final float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
+	
+	private VanillaSkyRenderer vanillaSkyRenderer = new VanillaSkyRenderer();
 
 	private XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
 	int minimalXMesh = -4;
@@ -50,6 +52,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 
 	@Override
 	public void render(float partialTicks, WorldClient world, Minecraft mc) {
+		vanillaSkyRenderer.renderSky(partialTicks);
 		GlStateManager.matrixMode(5889);
 		GlStateManager.loadIdentity();
 		Project.gluPerspective(fov, (float) mc.displayWidth / (float) mc.displayHeight, CLOSE_PLANE, FAR_PLANE);

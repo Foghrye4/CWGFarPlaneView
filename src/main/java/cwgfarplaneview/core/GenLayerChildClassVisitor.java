@@ -20,7 +20,7 @@ public class GenLayerChildClassVisitor extends ClassVisitor {
 			@Override
 			public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 				if (opcode == Opcodes.INVOKESTATIC && owner.equals("bdo")) {
-					System.out.println("Replacing GenLayer child classes 'IntCache;getIntCache(I)[I' method:" + owner + ";" + name + desc);
+					super.visitVarInsn(Opcodes.ALOAD, 0);
 					super.visitFieldInsn(Opcodes.GETFIELD, "net/minecraft/world/gen/layer/GenLayer", FIELD_NAME,
 							Type.getDescriptor(NonStaticIntCache.class));
 					super.visitInsn(Opcodes.SWAP);

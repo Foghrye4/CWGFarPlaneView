@@ -28,7 +28,6 @@ public class BiomeProviderClassVisitor extends ClassVisitor {
 
 				@Override
 				public void visitCode() {
-					System.out.println("Transforming BiomeProvider method:" + name + desc);
 					super.visitFieldInsn(Opcodes.GETSTATIC, "cwgfarplaneview/core/Lock", "instance",
 							"Lcwgfarplaneview/core/Lock;");
 					super.visitInsn(Opcodes.DUP);

@@ -18,7 +18,6 @@ public class GenLayerClassVisitor extends ClassVisitor {
 	@Override
 	public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
 		if (!firstFieldVisited) {
-			System.out.println("Injecting new field");
 			super.visitField(Opcodes.ACC_PROTECTED | Opcodes.ACC_FINAL, FIELD_NAME,
 					Type.getDescriptor(NonStaticIntCache.class), null, null);
 			firstFieldVisited = true;
@@ -34,7 +33,6 @@ public class GenLayerClassVisitor extends ClassVisitor {
 				@Override
 				public void visitInsn(int opcode) {
 					if (opcode == Opcodes.RETURN) {
-						System.out.println("Transforming GenLayer (net/minecraft/world/gen/layer/GenLayer) constructor method:" + name + desc);
 						super.visitVarInsn(Opcodes.ALOAD, 0);
 						super.visitTypeInsn(Opcodes.NEW, Type.getInternalName(NonStaticIntCache.class));
 						super.visitInsn(Opcodes.DUP);

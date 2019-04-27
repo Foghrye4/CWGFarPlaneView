@@ -18,7 +18,6 @@ public class CWGFPVClassTransformer implements IClassTransformer {
 			return transformGenLayer(basicClass);
 		}
 		else if(transformedName.startsWith("net.minecraft.world.gen.layer.")) {
-			System.out.println("Transforming GenLayerChild: " + transformedName);
 			return transformGenLayerChilds(basicClass);
 		}
 		return basicClass;
