@@ -26,7 +26,6 @@ public class GenLayerChildClassVisitor extends ClassVisitor {
 					super.visitInsn(Opcodes.SWAP);
 					super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(NonStaticIntCache.class),
 							"getIntCache", "(I)[I", false);
-					super.visitMethodInsn(opcode, owner, name, desc, itf);
 				} else {
 					super.visitMethodInsn(opcode, owner, name, desc, itf);
 				}
