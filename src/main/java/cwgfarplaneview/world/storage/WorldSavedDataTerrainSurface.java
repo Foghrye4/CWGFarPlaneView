@@ -16,7 +16,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	public int minimalZ = 0;
 	public int maximalX = 0;
 	public int maximalZ = 0;
-	volatile public boolean lock = false;
+	private Object lock = new Object();
 
 	public WorldSavedDataTerrainSurface(String name) {
 		super(name);
@@ -24,15 +24,19 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 
 	@Override
 	public void readFromNBT(NBTTagCompound nbt) {
-		NBTTagList tp = nbt.getTagList("terrainMap",10);
-		for (int i = 0; i < tp.tagCount(); i ++) {
-			TerrainPoint point = TerrainPoint.fromNBT(tp.getCompoundTagAt(i));
-			this.addToMap(point);
+		NBTTagList tp = nbt.getTagList("terrainMap", 10);
+		synchronized (lock) {
+			for (int i = 0; i < tp.tagCount(); i++) {
+				TerrainPoint point = TerrainPoint.fromNBT(tp.getCompoundTagAt(i));
+				this.addToMap(point);
+			}
 		}
 	}
-	
+
 	public void addToMap(TerrainPoint value) {
-		terrainMap.put(value);
+		synchronized (lock) {
+			terrainMap.put(value);
+		}
 		if (value.getX() < this.minimalX)
 			this.minimalX = value.getX();
 		if (value.getZ() < this.minimalZ)
@@ -46,13 +50,13 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 
 	@Override
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
-		lock = true;
 		NBTTagList tp = new NBTTagList();
-		for (TerrainPoint point : terrainMap) {
-			tp.appendTag(point.toNBT());
+		synchronized (lock) {
+			for (TerrainPoint point : terrainMap) {
+				tp.appendTag(point.toNBT());
+			}
 		}
 		compound.setTag("terrainMap", tp);
-		lock = false;
 		return compound;
 	}
 
@@ -67,13 +71,13 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	}
 
 	public void clear() {
-		lock = true;
-		terrainMap.clear();
+		synchronized (lock) {
+			terrainMap.clear();
+		}
 		minimalX = 0;
 		minimalZ = 0;
 		maximalX = 0;
 		maximalZ = 0;
 		this.markDirty();
-		lock = false;
 	}
 }

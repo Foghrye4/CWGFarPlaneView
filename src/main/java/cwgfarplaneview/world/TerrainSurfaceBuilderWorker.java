@@ -43,28 +43,13 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		data = dataIn;
 		CubeProviderServer cubeProvider = (CubeProviderServer) worldServerIn.getChunkProvider();
 		generator = cubeProvider.getCubeGenerator();
-		System.gc();
 		logger.info("Surface builder worker initialized");
-	}
-
-	private long getMemory() {
-		return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024;
 	}
 
 	public void tick() {
 		if (flush) {
-			logger.info("Clearing data. Memory before:" + getMemory());
 			data.clear();
-			System.gc();
-			logger.info("Clearing data. Memory after:" + getMemory());
 			flush = false;
-			return;
-		}
-		if (data.lock) {
-			try {
-				Thread.sleep(1000L);
-			} catch (InterruptedException e) {
-			}
 			return;
 		}
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
