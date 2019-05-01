@@ -41,15 +41,10 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 				tps[i] = new TerrainPoint(chunkX, chunkZ, blockY, byteBufInputStream.readInt(),
 						byteBufInputStream.readInt());
 			}
-			mc.addScheduledTask(() -> {
-				for (TerrainPoint tp : tps)
-					((ClientProxy) proxy).terrainRenderer.addToMap(tp);
-			});
+			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.addToMap(tps);
 			break;
 		case FLUSH:
-			mc.addScheduledTask(() -> {
-				((ClientProxy) proxy).terrainRenderer.clear();
-			});
+			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.clear();
 			break;
 		case RECIEVE_SEA_LEVEL:
 			mc.addScheduledTask(() -> {

@@ -29,6 +29,7 @@ import net.minecraft.world.biome.Biome;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
 
+	private final static int MESH_CELL_SIZE_BIT = 0;
 	private final WorldServer worldServer;
 	private final WorldSavedDataTerrainSurface data;
 	private ICubeGenerator generator;
