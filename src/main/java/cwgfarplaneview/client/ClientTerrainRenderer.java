@@ -33,10 +33,9 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private static final float CLOSE_PLANE = 16.0f;
 	private static final float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
 	
-	public ClientTerrainShapeBufferBuilder terrainRenderWorker;
+	public ClientTerrainShapeBufferBuilder terrainRenderWorker = new ClientTerrainShapeBufferBuilder();
 	
-	public void initTerrainRenderWorker(WorldClient world) {
-		terrainRenderWorker = new ClientTerrainShapeBufferBuilder(world);
+	public ClientTerrainRenderer() {
 		Thread thread = new Thread(terrainRenderWorker, "Client surface builder");
 		thread.setDaemon(true);
 		thread.setPriority(Thread.MIN_PRIORITY);
@@ -80,8 +79,6 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
 		GL11.glCallList(this.seaDisplayList);
 		GL11.glTranslatef(-renderPosX, 0.5f, -renderPosZ);
-		if (terrainRenderWorker == null)
-			initTerrainRenderWorker(world);
 		if (terrainRenderWorker.ready) {
 			compileDisplayList(world);
 			terrainRenderWorker.ready = false;

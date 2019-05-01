@@ -28,7 +28,6 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
-	private final WorldClient world;
 	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
 
 	int minimalXMesh = -4;
@@ -41,10 +40,6 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	volatile public boolean ready = false;
 	volatile public boolean run = true;
-
-	public ClientTerrainShapeBufferBuilder(WorldClient worldIn) {
-		world = worldIn;
-	}
 
 	private void addQuad(BufferBuilder worldRendererIn, WorldClient world, int x, int z) {
 		this.addVector(worldRendererIn, world, x, z, 0.0f, 0.0f);
@@ -60,8 +55,12 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			synchronized (lock) {
 				isDrawning = true;
 				buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
-				for (int x = minimalXMesh; x <= maximalXMesh; x++) {
+				a: for (int x = minimalXMesh; x <= maximalXMesh; x++) {
 					for (int z = minimalZMesh; z <= maximalZMesh; z++) {
+						WorldClient world = Minecraft.getMinecraft().world;
+						if (world == null) {
+							break a;
+						}
 						this.addQuad(buffer, world, x, z);
 					}
 				}
