@@ -1,24 +1,20 @@
 package cwgfarplaneview;
 
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
+import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
+import static cwgfarplaneview.CWGFarPlaneViewMod.proxy;
 
 import java.io.IOException;
 
 import cwgfarplaneview.world.TerrainPoint;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.network.FMLEventChannel;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.internal.FMLProxyPacket;
-import net.minecraftforge.registries.GameData;
 
 public class ClientNetworkHandler extends ServerNetworkHandler {
 

@@ -1,11 +1,13 @@
 package cwgfarplaneview.command;
 
-import cwgfarplaneview.CWGFarPlaneViewMod;
+import static cwgfarplaneview.CWGFarPlaneViewMod.network;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
 import cwgfarplaneview.world.TerrainPoint;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
-import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -13,15 +15,7 @@ import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
-
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 public class CWGFarPlaneViewCommand extends CommandBase {
 

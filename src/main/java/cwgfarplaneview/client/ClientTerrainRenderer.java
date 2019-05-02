@@ -1,13 +1,13 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
-import static cwgfarplaneview.util.AddressUtil.*;
+import static cwgfarplaneview.util.AddressUtil.CLOSE_PLANE;
+import static cwgfarplaneview.util.AddressUtil.FAR_PLANE;
+import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_BLOCKS;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
-import cwgfarplaneview.world.TerrainSurfaceBuilderWorker;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -17,9 +17,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -28,13 +26,9 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class ClientTerrainRenderer extends IRenderHandler {
 	private static final ResourceLocation TERRAIN_TEXTURE = new ResourceLocation(MODID,
 			"textures/terrain/white_noise.png");
-	public static final int HORIZONT_DISTANCE_CHUNKS = MAX_UPDATE_DISTANCE_CHUNKS - (32 << MESH_SIZE_BIT_CHUNKS);
-	public static final int HORIZONT_DISTANCE_BLOCKS = HORIZONT_DISTANCE_CHUNKS << 4;
-	private static final float CLOSE_PLANE = 16.0f;
-	private static final float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
-	
+
 	public ClientTerrainShapeBufferBuilder terrainRenderWorker = new ClientTerrainShapeBufferBuilder();
-	
+
 	public ClientTerrainRenderer() {
 		Thread thread = new Thread(terrainRenderWorker, "Client surface builder");
 		thread.setDaemon(true);
@@ -49,11 +43,12 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			return;
 		terrainRenderWorker.stop();
 	}
-	
+
 	private VanillaSkyRenderer vanillaSkyRenderer = new VanillaSkyRenderer();
 
 	private float fov = 70.0f;
 	private int seaLevel = 64;
+	private int prevHorizontDistanceBlocks = HORIZONT_DISTANCE_BLOCKS;
 	private int terrainDisplayList = -1;
 	private int seaDisplayList = -1;
 
@@ -74,12 +69,17 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		mc.entityRenderer.enableLightmap();
 		mc.getTextureManager().bindTexture(TERRAIN_TEXTURE);
 		if (this.seaDisplayList == -1) {
+			this.seaDisplayList = GLAllocation.generateDisplayLists(1);
 			this.compileSeaDisplayList();
+		}
+		if (prevHorizontDistanceBlocks != HORIZONT_DISTANCE_BLOCKS) {
+			this.compileSeaDisplayList();
+			prevHorizontDistanceBlocks = HORIZONT_DISTANCE_BLOCKS;
 		}
 		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
 		GL11.glCallList(this.seaDisplayList);
 		GL11.glTranslatef(-renderPosX, 0.5f, -renderPosZ);
-		if (terrainRenderWorker.ready) {
+		if (terrainRenderWorker.ready && terrainRenderWorker.isDrawning) {
 			compileDisplayList(world);
 			terrainRenderWorker.ready = false;
 		}
@@ -89,7 +89,6 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	}
 
 	private void compileSeaDisplayList() {
-		this.seaDisplayList = GLAllocation.generateDisplayLists(1);
 		GL11.glNewList(this.seaDisplayList, 4864);
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
@@ -115,14 +114,11 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glEndList();
 	}
 
-
-
 	@SubscribeEvent
 	public void fovHook(EntityViewRenderEvent.FOVModifier event) {
 		this.fov = event.getFOV();
 	}
 
-	
 	public void setSeaLevel(int seaLevelIn) {
 		seaLevel = seaLevelIn;
 	}

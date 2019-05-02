@@ -1,9 +1,8 @@
 package cwgfarplaneview.client;
 
+import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_SQ;
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
-
-import static cwgfarplaneview.client.ClientTerrainRenderer.*;
 
 import org.lwjgl.opengl.GL11;
 
@@ -11,6 +10,7 @@ import cwgfarplaneview.world.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
+import net.minecraft.block.BlockStainedHardenedClay;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -24,8 +24,6 @@ import net.minecraft.world.biome.Biome;
 
 public class ClientTerrainShapeBufferBuilder implements Runnable {
 
-	private static final int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE_CHUNKS * HORIZONT_DISTANCE_CHUNKS;
-
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
 	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
@@ -34,12 +32,12 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 	int minimalZMesh = -4;
 	int maximalXMesh = 4;
 	int maximalZMesh = 4;
-	boolean isDrawning = false;
+	volatile boolean isDrawning = false;
+	volatile public boolean ready = false;
+	volatile public boolean run = true;
 
 	Object lock = new Object();
 
-	volatile public boolean ready = false;
-	volatile public boolean run = true;
 
 	private void addQuad(BufferBuilder worldRendererIn, WorldClient world, int x, int z) {
 		this.addVector(worldRendererIn, world, x, z, 0.0f, 0.0f);
@@ -76,7 +74,8 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 	public void draw() {
 		synchronized (lock) {
 			this.buffer.finishDrawing();
-			isDrawning = false;
+			this.isDrawning = false;
+			this.ready = false;
 			this.vboUploader.draw(this.buffer);
 		}
 	}
@@ -116,8 +115,47 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			return 0x9fa4b1;
 		if (block == Blocks.DIRT)
 			return 0x866043;
-		if (block == Blocks.HARDENED_CLAY)
+		if (block == Blocks.HARDENED_CLAY) {
 			return 0x975d43;
+		}
+		if (block == Blocks.STAINED_HARDENED_CLAY) {
+			switch(state.getValue(BlockStainedHardenedClay.COLOR)) {
+			case BLACK:
+				return 0x251710;
+			case BLUE:
+				return 0x4a3c5b;
+			case BROWN:
+				return 0x4d3324;
+			case CYAN:
+				return 0x575b5b;
+			case GRAY:
+				return 0x3a2a24;
+			case GREEN:
+				return 0x4c532a;
+			case LIGHT_BLUE:
+				return 0x716c8a;
+			case LIME:
+				return 0x677535;
+			case MAGENTA:
+				return 0x96586d;
+			case ORANGE:
+				return 0xa25426;
+			case PINK:
+				return 0xa24e4f;
+			case PURPLE:
+				return 0x764656;
+			case RED:
+				return 0x8f3d2f;
+			case SILVER:
+				return 0x876b61;
+			case WHITE:
+				return 0xd2b2a1;
+			case YELLOW:
+				return 0xba8523;
+			default:
+				return 0x975d43;
+			}
+		}
 		if (block == Blocks.ICE)
 			return 0x7dadff;
 		if (block == Blocks.FROSTED_ICE)

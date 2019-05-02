@@ -10,6 +10,7 @@ import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 
 public class CWGFarPlaneViewEventHandler {
 
@@ -20,7 +21,7 @@ public class CWGFarPlaneViewEventHandler {
 		World world = event.getWorld();
 		if (world.isRemote || !(world instanceof WorldServer))
 			return;
-		if (world.provider.getDimension() != 0 || !world.getWorldType().getName().equals("CustomCubic"))
+		if (world.provider.getDimension() != 0 || !((ICubicWorld) world).isCubicWorld())
 			return;
 
 		WorldSavedDataTerrainSurface data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(world);

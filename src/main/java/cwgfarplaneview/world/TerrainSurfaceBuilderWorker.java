@@ -14,9 +14,11 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
+import io.github.opencubicchunks.cubicchunks.core.worldgen.generator.vanilla.VanillaCompatibilityGenerator;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -43,7 +45,12 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		worldServer = worldServerIn;
 		data = dataIn;
 		CubeProviderServer cubeProvider = (CubeProviderServer) worldServerIn.getChunkProvider();
-		generator = cubeProvider.getCubeGenerator();
+		if(cubeProvider.getCubeGenerator() instanceof VanillaCompatibilityGenerator) {
+			generator = new VanillaGeneratorWrapper((ICubicWorld) worldServerIn, worldServerIn.provider.createChunkGenerator());
+		}
+		else {
+			generator = cubeProvider.getCubeGenerator();
+		}
 		logger.info("Surface builder worker initialized");
 	}
 

@@ -44,6 +44,12 @@ public class BiomeProviderClassVisitor extends ClassVisitor {
 						super.visitInsn(Opcodes.MONITOREXIT);
 						super.visitVarInsn(Opcodes.ALOAD, 21);
 						super.visitInsn(Opcodes.ARETURN);
+					}else if(opcode == Opcodes.IRETURN) {
+						super.visitVarInsn(Opcodes.ISTORE, 21);
+						super.visitVarInsn(Opcodes.ALOAD, 20);
+						super.visitInsn(Opcodes.MONITOREXIT);
+						super.visitVarInsn(Opcodes.ILOAD, 21);
+						super.visitInsn(Opcodes.IRETURN);
 					} else if (opcode == Opcodes.RETURN) {
 						super.visitVarInsn(Opcodes.ALOAD, 20);
 						super.visitInsn(Opcodes.MONITOREXIT);
