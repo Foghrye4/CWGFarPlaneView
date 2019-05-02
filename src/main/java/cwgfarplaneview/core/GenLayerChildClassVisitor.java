@@ -5,9 +5,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import static cwgfarplaneview.core.GenLayerClassVisitor.*;
+
 public class GenLayerChildClassVisitor extends ClassVisitor {
 
-	private static final String FIELD_NAME = "intCache";
 
 	public GenLayerChildClassVisitor(int api, ClassVisitor cv) {
 		super(api, cv);
@@ -15,13 +16,13 @@ public class GenLayerChildClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-		return new MethodVisitor(Opcodes.ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
+		return new ChunkSeedRedirectMethodVisitor(Opcodes.ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
 
 			@Override
 			public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 				if (opcode == Opcodes.INVOKESTATIC && owner.equals("bdo")) {
 					super.visitVarInsn(Opcodes.ALOAD, 0);
-					super.visitFieldInsn(Opcodes.GETFIELD, "net/minecraft/world/gen/layer/GenLayer", FIELD_NAME,
+					super.visitFieldInsn(Opcodes.GETFIELD, "net/minecraft/world/gen/layer/GenLayer", INT_CACHE_FIELD_NAME,
 							Type.getDescriptor(NonStaticIntCache.class));
 					super.visitInsn(Opcodes.SWAP);
 					super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(NonStaticIntCache.class),

@@ -8,7 +8,7 @@
   "url": "",
   "updateUrl": "",
   "authorList": ["Foghrye4"],
-  "credits": "",
+  "credits": "I would like to thank Barteks2x for a valuable advices about safe parallel threading.",
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
