@@ -45,12 +45,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		worldServer = worldServerIn;
 		data = dataIn;
 		CubeProviderServer cubeProvider = (CubeProviderServer) worldServerIn.getChunkProvider();
-		if(cubeProvider.getCubeGenerator() instanceof VanillaCompatibilityGenerator) {
-			generator = new VanillaGeneratorWrapper((ICubicWorld) worldServerIn, worldServerIn.provider.createChunkGenerator());
-		}
-		else {
-			generator = cubeProvider.getCubeGenerator();
-		}
+		generator = cubeProvider.getCubeGenerator();
 		logger.info("Surface builder worker initialized");
 	}
 

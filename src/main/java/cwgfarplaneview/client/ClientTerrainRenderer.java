@@ -3,7 +3,6 @@ package cwgfarplaneview.client;
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
 import static cwgfarplaneview.util.AddressUtil.CLOSE_PLANE;
 import static cwgfarplaneview.util.AddressUtil.FAR_PLANE;
-import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_BLOCKS;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
@@ -17,10 +16,8 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
 import net.minecraftforge.client.IRenderHandler;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
-import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class ClientTerrainRenderer extends IRenderHandler {
@@ -36,19 +33,11 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		thread.start();
 	}
 
-	@SubscribeEvent
-	public void onWorldUnloadEvent(WorldEvent.Unload event) {
-		World world = event.getWorld();
-		if (world.provider.getDimension() != 0 || !(world instanceof WorldClient) || terrainRenderWorker == null)
-			return;
-		terrainRenderWorker.stop();
-	}
-
 	private VanillaSkyRenderer vanillaSkyRenderer = new VanillaSkyRenderer();
 
 	private float fov = 70.0f;
 	private int seaLevel = 64;
-	private int prevHorizontDistanceBlocks = HORIZONT_DISTANCE_BLOCKS;
+	private float prevFarPlane = FAR_PLANE;
 	private int terrainDisplayList = -1;
 	private int seaDisplayList = -1;
 
@@ -72,9 +61,9 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			this.seaDisplayList = GLAllocation.generateDisplayLists(1);
 			this.compileSeaDisplayList();
 		}
-		if (prevHorizontDistanceBlocks != HORIZONT_DISTANCE_BLOCKS) {
+		if (prevFarPlane != FAR_PLANE) {
 			this.compileSeaDisplayList();
-			prevHorizontDistanceBlocks = HORIZONT_DISTANCE_BLOCKS;
+			prevFarPlane = FAR_PLANE;
 		}
 		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
 		GL11.glCallList(this.seaDisplayList);
@@ -93,13 +82,13 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
-		worldRendererIn.pos(HORIZONT_DISTANCE_BLOCKS, seaLevel, HORIZONT_DISTANCE_BLOCKS).tex(0.0f, 0.0f)
+		worldRendererIn.pos(FAR_PLANE, seaLevel, FAR_PLANE).tex(0.0f, 0.0f)
 				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(HORIZONT_DISTANCE_BLOCKS, seaLevel, -HORIZONT_DISTANCE_BLOCKS).tex(1.0f, 0.0f)
+		worldRendererIn.pos(FAR_PLANE, seaLevel, -FAR_PLANE).tex(1.0f, 0.0f)
 				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(-HORIZONT_DISTANCE_BLOCKS, seaLevel, -HORIZONT_DISTANCE_BLOCKS).tex(1.0f, 1.0f)
+		worldRendererIn.pos(-FAR_PLANE, seaLevel, -FAR_PLANE).tex(1.0f, 1.0f)
 				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(-HORIZONT_DISTANCE_BLOCKS, seaLevel, HORIZONT_DISTANCE_BLOCKS).tex(0.0f, 1.0f)
+		worldRendererIn.pos(-FAR_PLANE, seaLevel, FAR_PLANE).tex(0.0f, 1.0f)
 				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
 		tessellator.draw();
 		GL11.glEndList();

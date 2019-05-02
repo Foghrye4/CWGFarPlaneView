@@ -23,7 +23,7 @@ public class BiomeProviderClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-		if (name.equals("a") && allDescriptors.contains(desc) || name.equals("b") && desc.equals("()V")) {
+		if (name.equals("a") && allDescriptors.contains(desc) || desc.equals("()V")) {
 			return new MethodVisitor(Opcodes.ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
 
 				@Override
