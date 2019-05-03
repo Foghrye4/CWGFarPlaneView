@@ -12,6 +12,9 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
+import net.minecraft.client.renderer.block.model.MultipartBakedModel;
+import net.minecraft.client.renderer.block.model.SimpleBakedModel;
+import net.minecraft.client.renderer.block.model.WeightedBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.EnumFacing;
@@ -43,6 +46,10 @@ public class BlockColors {
 		Minecraft mc = Minecraft.getMinecraft();
 		IBakedModel model = mc.getBlockRendererDispatcher().getModelForState(state);
 		if (model == null)
+			return 0;
+		if(!(model instanceof MultipartBakedModel) 
+				&&!(model instanceof WeightedBakedModel) 
+				&&!(model instanceof SimpleBakedModel))
 			return 0;
 		List<BakedQuad> quads = new ArrayList<BakedQuad>();
 		for (EnumFacing enumfacing : EnumFacing.values()) {

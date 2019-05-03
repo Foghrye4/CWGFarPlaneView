@@ -4,6 +4,8 @@ import static cwgfarplaneview.util.AddressUtil.*;
 
 import org.lwjgl.opengl.GL11;
 
+import cwgfarplaneview.CWGFarPlaneViewMod;
+import cwgfarplaneview.ClientProxy;
 import cwgfarplaneview.world.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
@@ -55,9 +57,9 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 				int z0 = minimalZMesh;
 				int z1 = maximalZMesh;
 				EntityPlayerSP player = Minecraft.getMinecraft().player;
-				if(player!=null) {
-					int pmccx = player.chunkCoordX>>MESH_SIZE_BIT_CHUNKS;
-					int pmccz = player.chunkCoordZ>>MESH_SIZE_BIT_CHUNKS;
+				if (player != null) {
+					int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
+					int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
 					x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
 					x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
 					z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
@@ -131,7 +133,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			return 0x975d43;
 		}
 		if (block == Blocks.STAINED_HARDENED_CLAY) {
-			switch(state.getValue(BlockStainedHardenedClay.COLOR)) {
+			switch (state.getValue(BlockStainedHardenedClay.COLOR)) {
 			case BLACK:
 				return 0x251710;
 			case BLUE:
@@ -183,7 +185,8 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		}
 		if (block == Blocks.SNOW)
 			return 0xf0fbfb;
-		return multiplyColors(0x979797, biome.getGrassColorAtPos(BlockPos.ORIGIN));
+		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
+		return cp.blockColors.map.getInt(state);
 	}
 
 	private int multiplyColors(int color1, int color2) {

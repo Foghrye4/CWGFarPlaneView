@@ -23,9 +23,6 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 		ByteBuf data = event.getPacket().payload();
 		PacketBuffer byteBufInputStream = new PacketBuffer(data);
 		Minecraft mc = Minecraft.getMinecraft();
-		EntityPlayerSP player = mc.player;
-		if (player == null)
-			return;
 		switch (ClientCommands.values()[byteBufInputStream.readByte()]) {
 		case RECIEVE_TERRAIN_DATA:
 			int amount = byteBufInputStream.readInt();
@@ -45,7 +42,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 		case RECIEVE_SEA_LEVEL:
 			mc.addScheduledTask(() -> {
 				((ClientProxy) proxy).terrainRenderer.setSeaLevel(byteBufInputStream.readInt());
-			});			
+			});
 			break;
 		default:
 			break;
