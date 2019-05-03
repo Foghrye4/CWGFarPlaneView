@@ -12,11 +12,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 
 	private static final Object lock = new Object();
 	private static final String DATA_IDENTIFIER = CWGFarPlaneViewMod.MODID + "Data";
-	public XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
-	public int minimalX = 0;
-	public int minimalZ = 0;
-	public int maximalX = 0;
-	public int maximalZ = 0;
+	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
 
 	public WorldSavedDataTerrainSurface(String name) {
 		super(name);
@@ -36,14 +32,6 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	public void addToMap(TerrainPoint value) {
 		synchronized (lock) {
 			terrainMap.put(value);
-			if (value.getX() < this.minimalX)
-				this.minimalX = value.getX();
-			if (value.getZ() < this.minimalZ)
-				this.minimalZ = value.getZ();
-			if (value.getX() > this.maximalX)
-				this.maximalX = value.getX();
-			if (value.getZ() > this.maximalZ)
-				this.maximalZ = value.getZ();
 			this.markDirty();
 		}
 	}
@@ -52,7 +40,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
 		synchronized (lock) {
 			NBTTagList tp = new NBTTagList();
-			for (TerrainPoint point : terrainMap) {
+			for (TerrainPoint point : getTerrainMap()) {
 				tp.appendTag(point.toNBT());
 			}
 			compound.setTag("terrainMap", tp);
@@ -72,12 +60,20 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 
 	public void clear() {
 		synchronized (lock) {
-			terrainMap.clear();
-			minimalX = 0;
-			minimalZ = 0;
-			maximalX = 0;
-			maximalZ = 0;
+			getTerrainMap().clear();
 			this.markDirty();
+		}
+	}
+
+	public TerrainPoint get(int x, int z) {
+		synchronized (lock) {
+			return getTerrainMap().get(x, z);
+		}
+	}
+
+	public XZMap<TerrainPoint> getTerrainMap() {
+		synchronized (lock) {
+			return terrainMap;
 		}
 	}
 }

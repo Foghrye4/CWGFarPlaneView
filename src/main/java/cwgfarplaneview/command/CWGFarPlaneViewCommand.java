@@ -49,10 +49,10 @@ public class CWGFarPlaneViewCommand extends CommandBase {
 					}
 				network.sendTerrainPointsToAllClients(tps);
 			} else if (args[0].equals("flush")) {
-				CWGFarPlaneViewEventHandler.worker.flush();
+				
 				network.sendCommandFlush();
 			} else if (args[0].equals("getall")) {
-				CWGFarPlaneViewEventHandler.worker.sendAllDataToPlayer((EntityPlayerMP) sender);
+				
 			} else {
 				throw new WrongUsageException(getUsage(sender), new Object[0]);
 			}

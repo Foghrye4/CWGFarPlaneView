@@ -1,8 +1,6 @@
 package cwgfarplaneview.client;
 
-import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_SQ;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.AddressUtil.*;
 
 import org.lwjgl.opengl.GL11;
 
@@ -38,7 +36,6 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	Object lock = new Object();
 
-
 	private void addQuad(BufferBuilder worldRendererIn, WorldClient world, int x, int z) {
 		this.addVector(worldRendererIn, world, x, z, 0.0f, 0.0f);
 		this.addVector(worldRendererIn, world, x, z + 1, 1.0f, 0.0f);
@@ -53,8 +50,21 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			synchronized (lock) {
 				isDrawning = true;
 				buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
-				a: for (int x = minimalXMesh; x <= maximalXMesh; x++) {
-					for (int z = minimalZMesh; z <= maximalZMesh; z++) {
+				int x0 = minimalXMesh;
+				int x1 = maximalXMesh;
+				int z0 = minimalZMesh;
+				int z1 = maximalZMesh;
+				EntityPlayerSP player = Minecraft.getMinecraft().player;
+				if(player!=null) {
+					int pmccx = player.chunkCoordX>>MESH_SIZE_BIT_CHUNKS;
+					int pmccz = player.chunkCoordZ>>MESH_SIZE_BIT_CHUNKS;
+					x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
+					x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
+					z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
+					z1 = Math.min(z1, pmccz + MAX_UPDATE_DISTANCE_CELLS);
+				}
+				a: for (int x = x0; x <= x1; x++) {
+					for (int z = z0; z <= z1; z++) {
 						WorldClient world = Minecraft.getMinecraft().world;
 						if (world == null) {
 							break a;
@@ -73,6 +83,8 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	public void draw() {
 		synchronized (lock) {
+			if (!this.isDrawning)
+				return;
 			this.buffer.finishDrawing();
 			this.isDrawning = false;
 			this.ready = false;
@@ -214,8 +226,8 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			}
 			if (needUpdate) {
 				if (isDrawning) {
-					buffer.finishDrawing();
 					isDrawning = false;
+					buffer.finishDrawing();
 				}
 				lock.notify();
 			}

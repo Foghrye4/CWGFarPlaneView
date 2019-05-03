@@ -11,15 +11,14 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldType;
 
 public class CWGFarPlaneViewEventHandler {
 
-	public static TerrainSurfaceBuilderWorker worker;
-
 	@SubscribeEvent
-	public void onWorldLoadEvent(WorldEvent.Load event) {
+	public void onWorldLoadEvent(EntityJoinWorldEvent event) {
 		World world = event.getWorld();
+		if(!(event.getEntity() instanceof EntityPlayerMP))
+			return;
 		if (world.isRemote || !(world instanceof WorldServer))
 			return;
 		if (world.provider.getDimension() != 0 || !((ICubicWorld) world).isCubicWorld())
@@ -28,10 +27,12 @@ public class CWGFarPlaneViewEventHandler {
 		if (world.getWorldType().getName().equals("VanillaCubic"))
 			return;
 		WorldSavedDataTerrainSurface data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(world);
-		worker = new TerrainSurfaceBuilderWorker((WorldServer) world, data);
-		Thread thread = new Thread(worker, "Terrain surface builder worker");
+		EntityPlayerMP player = (EntityPlayerMP) event.getEntity();
+		network.sendSeaLevel(player, event.getWorld().getSeaLevel());
+		TerrainSurfaceBuilderWorker worker = new TerrainSurfaceBuilderWorker(player, (WorldServer) world, data);
+		Thread thread = new Thread(worker, player.getName() + "'s terrain surface builder worker");
 		thread.setDaemon(true);
-		thread.setPriority(Thread.MIN_PRIORITY);
+		thread.setPriority(Thread.MIN_PRIORITY + 1);
 		thread.start();
 	}
 
@@ -42,15 +43,6 @@ public class CWGFarPlaneViewEventHandler {
 			return;
 		if (world.isRemote || !(world instanceof WorldServer))
 			return;
-		worker.stop();
 		network.sendCommandFlush();
-	}
-
-	@SubscribeEvent
-	public void onPlayerJoinWorld(EntityJoinWorldEvent event) {
-		if (event.getEntity() instanceof EntityPlayerMP && event.getWorld().provider.getDimension() == 0) {
-			worker.sendAllDataToPlayer((EntityPlayerMP) event.getEntity());
-			network.sendSeaLevel((EntityPlayerMP) event.getEntity(), event.getWorld().getSeaLevel());
-		}
 	}
 }

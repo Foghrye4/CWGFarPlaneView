@@ -64,6 +64,7 @@ public class ServerNetworkHandler {
 		EntityPlayerMP player;
 		switch (ServerCommands.values()[byteBufInputStream.readByte()]) {
 		case REQUEST_TERRAIN_DATA:
+			// NOOP
 			playerEntityId = byteBufInputStream.readInt();
 			worldDimensionId = byteBufInputStream.readInt();
 			world = server.getWorld(worldDimensionId);
@@ -72,7 +73,6 @@ public class ServerNetworkHandler {
 				logger.error("Player requesting terrain data, but server side player instance is NULL!");
 				break;
 			}
-			CWGFarPlaneViewEventHandler.worker.sendAllDataToPlayer(player);
 			break;
 		}
 	}

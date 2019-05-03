@@ -26,7 +26,7 @@ public class CWGFarPlaneViewConfig {
 	}
 
 	private void syncConfig() {
-		AddressUtil.setMaxUpdateDistance(configuration.getInt("max_update_distance", CATEGORY_GENERAL, 92, 16, 16777216,
+		AddressUtil.setMaxUpdateDistance(configuration.getInt("max_update_distance", CATEGORY_GENERAL, 192, 16, 16777216,
 				"Control both client side horizont distance and server side terrain shaper max update distance."));
 		AddressUtil.setClosePlaneRange(configuration.getFloat("close_plane_range", CATEGORY_CLIENT, 16.0f, 0.1f, 1024f,
 				"Close plane cutting range. Terrain and water pixels, which are more close to player, than this value, will not be rendered."));

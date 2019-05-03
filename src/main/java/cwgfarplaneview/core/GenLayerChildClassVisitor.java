@@ -16,7 +16,7 @@ public class GenLayerChildClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-		return new ChunkSeedRedirectMethodVisitor(Opcodes.ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
+		return new MethodVisitor(Opcodes.ASM5, super.visitMethod(access, name, desc, signature, exceptions)) {
 
 			@Override
 			public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
