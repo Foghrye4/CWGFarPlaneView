@@ -1,6 +1,7 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
+import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.util.AddressUtil.CLOSE_PLANE;
 import static cwgfarplaneview.util.AddressUtil.FAR_PLANE;
 
@@ -25,12 +26,13 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			"textures/terrain/white_noise.png");
 
 	public ClientTerrainShapeBufferBuilder terrainRenderWorker = new ClientTerrainShapeBufferBuilder();
-
-	public ClientTerrainRenderer() {
-		Thread thread = new Thread(terrainRenderWorker, "Client surface builder");
+	
+	public void init() {
+		Thread thread = new Thread(terrainRenderWorker, "CWGFarPlaneView client surface renderer");
 		thread.setDaemon(true);
 		thread.setPriority(Thread.MIN_PRIORITY);
 		thread.start();
+		logger.debug("Client surface renderer initialized.");
 	}
 
 	private VanillaSkyRenderer vanillaSkyRenderer = new VanillaSkyRenderer();
@@ -98,9 +100,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		if (this.terrainDisplayList == -1) {
 			this.terrainDisplayList = GLAllocation.generateDisplayLists(1);
 		}
-		GL11.glNewList(this.terrainDisplayList, 4864);
-		terrainRenderWorker.draw();
-		GL11.glEndList();
+		terrainRenderWorker.draw(this.terrainDisplayList);
 	}
 
 	@SubscribeEvent
@@ -111,4 +111,5 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	public void setSeaLevel(int seaLevelIn) {
 		seaLevel = seaLevelIn;
 	}
+
 }

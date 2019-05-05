@@ -1,14 +1,15 @@
-package cwgfarplaneview.world;
+package cwgfarplaneview.world.terrain;
 
 import io.github.opencubicchunks.cubicchunks.api.util.XZAddressable;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.registries.GameData;
 
 public class TerrainPoint implements XZAddressable {
-	int chunkX;
-	int chunkZ;
+	public int chunkX;
+	public int chunkZ;
 	public int blockY;
 	public IBlockState blockState;
 	public Biome biome;
@@ -23,6 +24,12 @@ public class TerrainPoint implements XZAddressable {
 		blockY = height;
 		blockState = blockStateIn;
 		biome = biomeIn;
+		if (blockState == null)
+			throw new NullPointerException();
+		if (blockState == Blocks.AIR.getDefaultState())
+			throw new IllegalStateException("Blockstate should not be AIR!");
+		if (biome == null)
+			throw new NullPointerException();
 	}
 
 	@Override
@@ -41,7 +48,7 @@ public class TerrainPoint implements XZAddressable {
 		nbt.setInteger("z", chunkZ);
 		nbt.setInteger("y", blockY);
 		nbt.setInteger("blockstate", GameData.getBlockStateIDMap().get(blockState));
-		nbt.setInteger("biome",Biome.getIdForBiome(biome));
+		nbt.setInteger("biome", Biome.getIdForBiome(biome));
 		return nbt;
 	}
 
@@ -53,7 +60,7 @@ public class TerrainPoint implements XZAddressable {
 		int biome = nbt.getInteger("biome");
 		return new TerrainPoint(x, z, y, bstate, biome);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "TerrainPoint[chunkX:" + chunkX + ",chunkZ:" + chunkZ + ",height:" + blockY + "]";

@@ -1,7 +1,7 @@
 package cwgfarplaneview.world.storage;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
-import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.world.terrain.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -49,13 +49,15 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	}
 
 	public static WorldSavedDataTerrainSurface getOrCreateWorldSavedData(World worldIn) {
-		WorldSavedDataTerrainSurface data = (WorldSavedDataTerrainSurface) worldIn.getPerWorldStorage()
-				.getOrLoadData(WorldSavedDataTerrainSurface.class, WorldSavedDataTerrainSurface.DATA_IDENTIFIER);
-		if (data == null) {
-			data = new WorldSavedDataTerrainSurface(DATA_IDENTIFIER);
-			worldIn.getPerWorldStorage().setData(DATA_IDENTIFIER, data);
+		synchronized (lock) {
+			WorldSavedDataTerrainSurface data = (WorldSavedDataTerrainSurface) worldIn.getPerWorldStorage()
+					.getOrLoadData(WorldSavedDataTerrainSurface.class, WorldSavedDataTerrainSurface.DATA_IDENTIFIER);
+			if (data == null) {
+				data = new WorldSavedDataTerrainSurface(DATA_IDENTIFIER);
+				worldIn.getPerWorldStorage().setData(DATA_IDENTIFIER, data);
+			}
+			return data;
 		}
-		return data;
 	}
 
 	public void clear() {

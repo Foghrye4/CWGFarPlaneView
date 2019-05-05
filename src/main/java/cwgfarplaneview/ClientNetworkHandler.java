@@ -5,7 +5,7 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.proxy;
 
 import java.io.IOException;
 
-import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.world.terrain.TerrainPoint;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;

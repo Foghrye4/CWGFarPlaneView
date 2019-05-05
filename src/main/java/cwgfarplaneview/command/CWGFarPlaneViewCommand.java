@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.world.terrain.TerrainPoint;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;

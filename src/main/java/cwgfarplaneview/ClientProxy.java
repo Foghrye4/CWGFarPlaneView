@@ -3,7 +3,6 @@ package cwgfarplaneview;
 import cwgfarplaneview.client.BlockColors;
 import cwgfarplaneview.client.ClientTerrainRenderer;
 import net.minecraft.world.World;
-import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -15,7 +14,7 @@ public class ClientProxy extends ServerProxy {
 	@Override
 	public void preInit() {
 		MinecraftForge.EVENT_BUS.register(this);
-	};
+	}
 	
 	@SubscribeEvent
 	public void onWorldLoadEvent(WorldEvent.Load event) {
@@ -26,8 +25,8 @@ public class ClientProxy extends ServerProxy {
 		MinecraftForge.EVENT_BUS.register(terrainRenderer);
 	}
 	
-	public void init() {
+	public void postInit() {
 		blockColors.loadColors();
+		terrainRenderer.init();
 	}
-
 }

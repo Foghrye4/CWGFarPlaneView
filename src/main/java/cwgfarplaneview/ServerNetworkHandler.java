@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.List;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.world.terrain.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

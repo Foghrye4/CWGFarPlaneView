@@ -1,12 +1,18 @@
 package cwgfarplaneview.client;
 
+import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.util.AddressUtil.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.lwjgl.opengl.GL11;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.ClientProxy;
-import cwgfarplaneview.world.TerrainPoint;
+import cwgfarplaneview.util.TerrainUtil;
+import cwgfarplaneview.world.terrain.TerrainPoint;
+import cwgfarplaneview.world.terrain.TerrainQuad;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
@@ -38,11 +44,67 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	Object lock = new Object();
 
-	private void addQuad(BufferBuilder worldRendererIn, WorldClient world, int x, int z) {
-		this.addVector(worldRendererIn, world, x, z, 0.0f, 0.0f);
-		this.addVector(worldRendererIn, world, x, z + 1, 1.0f, 0.0f);
-		this.addVector(worldRendererIn, world, x + 1, z + 1, 1.0f, 1.0f);
-		this.addVector(worldRendererIn, world, x + 1, z, 0.0f, 1.0f);
+	private void addQuad(BufferBuilder worldRendererIn, int x, int z) {
+		TerrainPoint tp00 = terrainMap.get(x, z);
+		if (tp00 == null)
+			return;
+		TerrainPoint tp10 = terrainMap.get(x + 1, z);
+		TerrainPoint tp01 = terrainMap.get(x, z + 1);
+		TerrainPoint tp11 = terrainMap.get(x + 1, z + 1);
+		if (tp10 != null && tp01 != null && tp11 != null) {
+			this.addVector(worldRendererIn, tp00, 0.0f, 0.0f);
+			this.addVector(worldRendererIn, tp01, 1.0f, 0.0f);
+			this.addVector(worldRendererIn, tp11, 1.0f, 1.0f);
+			this.addVector(worldRendererIn, tp10, 0.0f, 1.0f);
+			return;
+		}
+		int dx = 1;
+		while (dx <= 32 && tp10 == null) {
+			dx <<= 1;
+			tp10 = terrainMap.get(x + dx, z);
+		}
+		if (tp10 == null)
+			return;
+		int dz = 1;
+		while (dz <= 32 && tp01 == null) {
+			dz <<= 1;
+			tp01 = terrainMap.get(x, z + dz);
+		}
+		if (tp01 == null)
+			return;
+		tp11 = terrainMap.get(x + dx, z + dz);
+		if (tp11 == null)
+			return;
+		boolean hasPointsBetween = false;
+		a: for (int ix = 0; ix <= dz; ix++) {
+			for (int iz = 0; iz <= dz; iz++) {
+				if ((ix != 0 && ix != dx || iz != 0 && iz != dz) && terrainMap.contains(x + dx, z + dz)) {
+					hasPointsBetween = true;
+					break a;
+				}
+			}
+		}
+		if (!hasPointsBetween) {
+			this.addVector(worldRendererIn, tp00, 0.0f, 0.0f);
+			this.addVector(worldRendererIn, tp01, 1.0f, 0.0f);
+			this.addVector(worldRendererIn, tp11, 1.0f, 1.0f);
+			this.addVector(worldRendererIn, tp10, 0.0f, 1.0f);
+			return;
+		}
+		TerrainQuad tQuad = new TerrainQuad(terrainMap.get(x, z), terrainMap.get(x, z + dz),
+				terrainMap.get(x + dx, z + dz), terrainMap.get(x + dx, z));
+		for (int ix = 0; ix <= dz; ix++) {
+			for (int iz = 0; iz <= dz; iz++) {
+				if ((ix != 0 && ix != dx || iz != 0 && iz != dz) && terrainMap.contains(x + dx, z + dz)) {
+					tQuad.split(terrainMap.get(x + dx, z + dz));
+				}
+			}
+		}
+		int uvi = -1;
+		for (TerrainPoint tp : tQuad) {
+			float[] uvs = new float[] { 0.0f, 1.0f, 1.0f, 0.0f };
+			this.addVector(worldRendererIn, tp, uvs[++uvi % uvs.length], uvs[(uvi + 1) % uvs.length]);
+		}
 	}
 
 	@Override
@@ -71,9 +133,10 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 						if (world == null) {
 							break a;
 						}
-						this.addQuad(buffer, world, x, z);
+						this.addQuad(buffer, x, z);
 					}
 				}
+				logger.debug("Ready-waiting");
 				ready = true;
 				try {
 					lock.wait();
@@ -83,38 +146,32 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		}
 	}
 
-	public void draw() {
+	public void draw(int terrainDisplayList) {
 		synchronized (lock) {
-			if (!this.isDrawning)
+			if (!this.isDrawning) {
+				logger.debug("Draw-no drawing");
 				return;
+			}
+			GL11.glNewList(terrainDisplayList, 4864);
 			this.buffer.finishDrawing();
 			this.isDrawning = false;
 			this.ready = false;
 			this.vboUploader.draw(this.buffer);
+			logger.debug("Drawing");
+			GL11.glEndList();
 		}
 	}
 
-	private void addVector(BufferBuilder worldRendererIn, WorldClient world, int x, int z, float u, float v) {
-		int bx = x << MESH_SIZE_BIT_BLOCKS;
-		int bz = z << MESH_SIZE_BIT_BLOCKS;
-		int height = 0;
-		int color = 0x00FF00;
-		float red = 0.0f;
-		float green = 0.5f;
-		float blue = 0.0f;
-		TerrainPoint point = terrainMap.get(x, z);
-		int skyLight = 240;
-		int blockLight = 0;
-		if (point != null) {
-			height = point.blockY;
-			BlockPos pos = new BlockPos(bx, height, bz);
-			color = this.getBlockColor(point.blockState, point.biome, pos);
-			red = (color >> 16 & 255) / 256f;
-			green = (color >> 8 & 255) / 256f;
-			blue = (color & 255) / 256f;
-		}
-		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(skyLight, blockLight).color(red, green, blue, 1.0f)
-				.endVertex();
+	private void addVector(BufferBuilder worldRendererIn, TerrainPoint point, float u, float v) {
+		int bx = point.chunkX << MESH_SIZE_BIT_BLOCKS;
+		int bz = point.chunkZ << MESH_SIZE_BIT_BLOCKS;
+		int height = point.blockY;
+		BlockPos pos = new BlockPos(bx, height, bz);
+		int color = this.getBlockColor(point.blockState, point.biome, pos);
+		float red = (color >> 16 & 255) / 256f;
+		float green = (color >> 8 & 255) / 256f;
+		float blue = (color & 255) / 256f;
+		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(240, 0).color(red, green, blue, 1.0f).endVertex();
 	}
 
 	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {
@@ -186,6 +243,8 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		if (block == Blocks.SNOW)
 			return 0xf0fbfb;
 		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
+		if(!cp.blockColors.map.containsKey(state))
+			logger.warn("Unknow blockstate recieved:" + state);
 		return cp.blockColors.map.getInt(state);
 	}
 
@@ -204,6 +263,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	public void addToMap(TerrainPoint[] tps) {
 		synchronized (lock) {
+			logger.debug("Recieveing points");
 			boolean needUpdate = false;
 			for (TerrainPoint tp : tps) {
 				terrainMap.put(tp);
