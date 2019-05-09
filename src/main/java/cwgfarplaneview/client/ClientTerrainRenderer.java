@@ -26,7 +26,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			"textures/terrain/white_noise.png");
 
 	public ClientTerrainShapeBufferBuilder terrainRenderWorker = new ClientTerrainShapeBufferBuilder();
-	
+
 	public void init() {
 		Thread thread = new Thread(terrainRenderWorker, "CWGFarPlaneView client surface renderer");
 		thread.setDaemon(true);
@@ -35,17 +35,18 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		logger.debug("Client surface renderer initialized.");
 	}
 
-	private VanillaSkyRenderer vanillaSkyRenderer = new VanillaSkyRenderer();
-
 	private float fov = 70.0f;
 	private int seaLevel = 64;
 	private float prevFarPlane = FAR_PLANE;
 	private int terrainDisplayList = -1;
 	private int seaDisplayList = -1;
+	private int backgroundDisplayList = -1;
 
 	@Override
 	public void render(float partialTicks, WorldClient world, Minecraft mc) {
-		vanillaSkyRenderer.renderSky(partialTicks);
+		world.provider.setSkyRenderer(null);
+		mc.renderGlobal.renderSky(partialTicks, 0);
+		world.provider.setSkyRenderer(this);
 		GlStateManager.matrixMode(5889);
 		GlStateManager.loadIdentity();
 		Project.gluPerspective(fov, (float) mc.displayWidth / (float) mc.displayHeight, CLOSE_PLANE, FAR_PLANE);
@@ -55,27 +56,55 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		float renderPosY = (float) (player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks);
 		float renderPosZ = (float) (player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks);
 		GL11.glDisable(GL11.GL_FOG);
-		GL11.glPushMatrix();
 		GL11.glShadeModel(GL11.GL_SMOOTH);
 		mc.entityRenderer.enableLightmap();
 		mc.getTextureManager().bindTexture(TERRAIN_TEXTURE);
+		
 		if (this.seaDisplayList == -1) {
 			this.seaDisplayList = GLAllocation.generateDisplayLists(1);
 			this.compileSeaDisplayList();
 		}
+		if (this.backgroundDisplayList == -1) {
+			this.backgroundDisplayList = GLAllocation.generateDisplayLists(1);
+			this.compileBackgroundDisplayList();
+		}
+
+		
 		if (prevFarPlane != FAR_PLANE) {
 			this.compileSeaDisplayList();
+			this.compileBackgroundDisplayList();
 			prevFarPlane = FAR_PLANE;
 		}
+		
+		GL11.glDisable(GL11.GL_DEPTH_TEST);
+		GL11.glDisable(GL11.GL_BLEND);
+		GL11.glPushMatrix();
 		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
-		GL11.glCallList(this.seaDisplayList);
-		GL11.glTranslatef(-renderPosX, 0.5f, -renderPosZ);
+		GL11.glCallList(this.backgroundDisplayList);
+		GL11.glPopMatrix();
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		
+		// Terrain
+		GL11.glPushMatrix();
+//		LightHelper.enableLight(world, partialTicks);
+		GL11.glTranslatef(-renderPosX, 0.5f - renderPosY, -renderPosZ);
 		if (terrainRenderWorker.ready && terrainRenderWorker.isDrawning) {
 			compileDisplayList(world);
 			terrainRenderWorker.ready = false;
 		}
 		GL11.glCallList(this.terrainDisplayList);
+//		LightHelper.disableLight();
 		GL11.glPopMatrix();
+
+		// Sea
+		GL11.glPushMatrix();
+		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
+		GL11.glEnable(GL11.GL_BLEND);
+		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		GL11.glCallList(this.seaDisplayList);
+		GL11.glDisable(GL11.GL_BLEND);
+		GL11.glPopMatrix();
+
 		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 	}
 
@@ -84,17 +113,60 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
-		worldRendererIn.pos(FAR_PLANE, seaLevel, FAR_PLANE).tex(0.0f, 0.0f)
-				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(FAR_PLANE, seaLevel, -FAR_PLANE).tex(1.0f, 0.0f)
-				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(-FAR_PLANE, seaLevel, -FAR_PLANE).tex(1.0f, 1.0f)
-				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
-		worldRendererIn.pos(-FAR_PLANE, seaLevel, FAR_PLANE).tex(0.0f, 1.0f)
-				.lightmap(240, 0).color(0.17f, 0.24f, 0.97f, 1.0f).endVertex();
+		
+		this.addSeaVertex(FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(FAR_PLANE * 2,  0.0f, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
+		this.addSeaVertex(0.0f,  FAR_PLANE * 2, 0.0f, 1.0f, 1.0f);
+		
+		this.addSeaVertex(FAR_PLANE * 2,  -FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  -FAR_PLANE * 2, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
+		this.addSeaVertex(FAR_PLANE * 2,  0.0f, 0.0f, 1.0f, 1.0f);
+		
+		this.addSeaVertex(-FAR_PLANE * 2,  -FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(-FAR_PLANE * 2,  0.0f, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
+		this.addSeaVertex(0.0f,  -FAR_PLANE * 2, 0.0f, 1.0f, 1.0f);
+
+		this.addSeaVertex(-FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  FAR_PLANE * 2, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
+		this.addSeaVertex(-FAR_PLANE * 2,  0.0f, 0.0f, 1.0f, 1.0f);
+		
 		tessellator.draw();
 		GL11.glEndList();
 	}
+	
+	private void compileBackgroundDisplayList() {
+		GL11.glNewList(this.backgroundDisplayList, 4864);
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder worldRendererIn = tessellator.getBuffer();
+		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
+		
+		this.addBackgroundVertex(FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f);
+		this.addBackgroundVertex(FAR_PLANE * 2,  -FAR_PLANE * 2, 1.0f, 0.0f);
+		this.addBackgroundVertex(-FAR_PLANE * 2,  -FAR_PLANE * 2, 1.0f, 1.0f);
+		this.addBackgroundVertex(-FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 1.0f);
+		
+		tessellator.draw();
+		GL11.glEndList();
+	}
+	
+	private void addSeaVertex(float x, float z, float u, float v, float alpha) {
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder worldRendererIn = tessellator.getBuffer();
+		worldRendererIn.pos(x, seaLevel, z).tex(u, v).lightmap(240, 0)
+		.color(0.17f, 0.24f, 0.97f, alpha).endVertex();
+	}
+	
+	private void addBackgroundVertex(float x, float z, float u, float v) {
+		Tessellator tessellator = Tessellator.getInstance();
+		BufferBuilder worldRendererIn = tessellator.getBuffer();
+		worldRendererIn.pos(x, seaLevel, z).tex(u, v).lightmap(240, 0)
+		.color(0.137f, 0.192f, 0.78f, 1.0f).endVertex();
+	}
+
 
 	private void compileDisplayList(WorldClient world) {
 		if (this.terrainDisplayList == -1) {
@@ -112,4 +184,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		seaLevel = seaLevelIn;
 	}
 
+	public int getSeaLevel() {
+		return seaLevel;
+	}
 }

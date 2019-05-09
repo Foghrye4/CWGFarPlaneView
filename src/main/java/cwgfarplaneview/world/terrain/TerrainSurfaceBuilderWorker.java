@@ -16,6 +16,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainG
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
+import net.minecraft.util.ReportedException;
 import net.minecraft.world.WorldServer;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
@@ -46,7 +47,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		logger.debug("Surface builder worker for player " + player.getName() + " initialized.");
 	}
 
-	public void tick() {
+	public void tick() throws IncorrectTerrainDataException {
 		int px = player.chunkCoordX;
 		int pz = player.chunkCoordZ;
 		if (px < minimalX || px > maximalX 
@@ -56,7 +57,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
 		EnumFacing closestSide = getSideClosestToPlayer(px,pz);
 		int pointsGeneratedThisTick = 0;
-		while (closestSide != EnumFacing.UP && pointsGeneratedThisTick < 2048 && pointsList.size() < 4096) {
+		while (run && !player.isDead && closestSide != EnumFacing.UP && pointsGeneratedThisTick < 2048 && pointsList.size() < 4096) {
 			if (closestSide.getAxis() == Axis.X) {
 				int x = closestSide == EnumFacing.EAST ?++maximalX : --minimalX;
 				for (int z = minimalZ; z <= maximalZ; z ++) {
@@ -85,7 +86,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		maximalZ = player.chunkCoordZ;
 	}
 
-	private boolean addPointAt(List<TerrainPoint> pointsList, int x, int z) {
+	private boolean addPointAt(List<TerrainPoint> pointsList, int x, int z) throws IncorrectTerrainDataException {
 		boolean newlyGenerated = false;
 		TerrainPoint point = data.get(x, z);
 		if (point == null) {
@@ -125,9 +126,19 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	public void run() {
 		try {
 			data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(world);
+		} catch (ReportedException e) {
+			logger.catching(e);
+			data = new WorldSavedDataTerrainSurface();
+		}
+		try {
 			while (run && !player.isDead) {
 				tick();
 			}
+			logger.info("Finishing terrain builder thread");
+			data.save(world);
+			logger.info("Terrain data saved");
+		} catch (IncorrectTerrainDataException | ReportedException e) {
+			logger.catching(e);
 		} finally {
 			run = false;
 			CWGFarPlaneViewEventHandler.workers.remove(this);

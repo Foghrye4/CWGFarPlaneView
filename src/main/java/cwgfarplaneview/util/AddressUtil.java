@@ -1,6 +1,5 @@
 package cwgfarplaneview.util;
 
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 
 public class AddressUtil {
@@ -13,7 +12,7 @@ public class AddressUtil {
 	public static int HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE_CHUNKS * HORIZONT_DISTANCE_CHUNKS;
 	
 	public static float CLOSE_PLANE = 64.0f;
-	public static float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
+	public static float FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * 2;
 	
 	public static void meshCoordsToBlockPos(MutableBlockPos pos, int meshX, int meshZ) {
 		pos.setPos(meshX << MESH_SIZE_BIT_BLOCKS, 64, meshZ << MESH_SIZE_BIT_BLOCKS);
@@ -25,7 +24,7 @@ public class AddressUtil {
 		HORIZONT_DISTANCE_CHUNKS = MAX_UPDATE_DISTANCE_CHUNKS - (32 << MESH_SIZE_BIT_CHUNKS);
 		HORIZONT_DISTANCE_BLOCKS = HORIZONT_DISTANCE_CHUNKS << 4;
 		HORIZONT_DISTANCE_SQ = HORIZONT_DISTANCE_CHUNKS * HORIZONT_DISTANCE_CHUNKS;
-		FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * MathHelper.SQRT_2;
+		FAR_PLANE = HORIZONT_DISTANCE_BLOCKS * 2;
 	}
 
 	public static void setClosePlaneRange(float closePlaneDistance) {

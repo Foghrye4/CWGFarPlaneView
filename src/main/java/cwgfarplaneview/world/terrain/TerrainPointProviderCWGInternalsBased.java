@@ -3,12 +3,14 @@ package cwgfarplaneview.world.terrain;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
 import cwgfarplaneview.util.AddressUtil;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings.IntAABB;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.NoiseSource;
@@ -19,7 +21,6 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
 public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvider {
-	private static final Vec3i GEN_SCALE = new Vec3i(4, 8, 4);
     private static final int CACHE_SIZE_2D = 16 * 16;
     private static final int CACHE_SIZE_3D = 16 * 16 * 16;
     private static final ToIntFunction<Vec3i> HASH_2D = (v) -> v.getX() + v.getZ() * 5;
@@ -103,22 +104,27 @@ public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvid
 	    }
 	 
 	@Override
-	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) {
+	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) throws IncorrectTerrainDataException {
 		int cubeX = meshX << AddressUtil.MESH_SIZE_BIT_CHUNKS;
 		int cubeZ = meshZ << AddressUtil.MESH_SIZE_BIT_CHUNKS;
 		int cubeY = heightHint >> 4;
-        BlockPos start = new BlockPos(cubeX * 4, cubeY * 2, cubeZ * 4);
-        BlockPos end = start.add(4, 2, 4);
-        terrainBuilder.forEachScaled(start, end, GEN_SCALE, noiseConsumer);
-        if(noiseConsumer.surfaceDetected) {
-    		this.noiseConsumer.reset();
-        	return new TerrainPoint(meshX, meshZ, noiseConsumer.surfaceHeight, noiseConsumer.blockState, getBiomeAt(cubeX, cubeZ));
+		 for (Entry<IntAABB, TerrainPointProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
+			 if(entry.getKey().contains(cubeX, cubeY, cubeZ)) {
+				 return entry.getValue().getTerrainPointAt(meshX, meshZ);
+			 }
+		 }
+        while(!noiseConsumer.surfaceDetected) {
+    		cubeY = heightHint >> 4;
+            BlockPos start = new BlockPos(cubeX * 16, cubeY * 2, cubeZ * 16);
+            BlockPos end = start.add(4, 2, 4);
+            terrainBuilder.forEachScaled(start, end, new Vec3i(1, 8, 1), noiseConsumer);
+            if(noiseConsumer.isSurface)
+            	heightHint+=16;
+            else
+            	heightHint-=16;
         }
-        if(noiseConsumer.isSurface)
-        	heightHint+=16;
-        else
-        	heightHint-=16;
-		return this.getTerrainPointAt(meshX, meshZ);
+        noiseConsumer.reset();
+    	return new TerrainPoint(meshX, meshZ, noiseConsumer.surfaceHeight, noiseConsumer.blockState, getBiomeAt(cubeX, cubeZ));
 	}
 	
 	private Biome getBiomeAt(int x, int z) {

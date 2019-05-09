@@ -1,16 +1,17 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
-import static cwgfarplaneview.util.AddressUtil.*;
-
-import java.util.HashSet;
-import java.util.Set;
+import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_SQ;
+import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CELLS;
+import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
+import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
 
 import org.lwjgl.opengl.GL11;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.ClientProxy;
 import cwgfarplaneview.util.TerrainUtil;
+import cwgfarplaneview.util.Vec3f;
 import cwgfarplaneview.world.terrain.TerrainPoint;
 import cwgfarplaneview.world.terrain.TerrainQuad;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
@@ -24,6 +25,7 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
@@ -33,6 +35,13 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
 	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
+    private static final VertexFormat VERTEX_FORMAT = (new VertexFormat())
+    		.addElement(DefaultVertexFormats.POSITION_3F)
+    		.addElement(DefaultVertexFormats.TEX_2F)
+    		.addElement(DefaultVertexFormats.TEX_2S)
+    		.addElement(DefaultVertexFormats.COLOR_4UB)
+    		.addElement(DefaultVertexFormats.NORMAL_3B)
+    		.addElement(DefaultVertexFormats.PADDING_1B);
 
 	int minimalXMesh = -4;
 	int minimalZMesh = -4;
@@ -52,10 +61,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		TerrainPoint tp01 = terrainMap.get(x, z + 1);
 		TerrainPoint tp11 = terrainMap.get(x + 1, z + 1);
 		if (tp10 != null && tp01 != null && tp11 != null) {
-			this.addVector(worldRendererIn, tp00, 0.0f, 0.0f);
-			this.addVector(worldRendererIn, tp01, 1.0f, 0.0f);
-			this.addVector(worldRendererIn, tp11, 1.0f, 1.0f);
-			this.addVector(worldRendererIn, tp10, 0.0f, 1.0f);
+			this.addQuad(worldRendererIn, tp00, tp01, tp11, tp10);
 			return;
 		}
 		int dx = 1;
@@ -85,10 +91,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			}
 		}
 		if (!hasPointsBetween) {
-			this.addVector(worldRendererIn, tp00, 0.0f, 0.0f);
-			this.addVector(worldRendererIn, tp01, 1.0f, 0.0f);
-			this.addVector(worldRendererIn, tp11, 1.0f, 1.0f);
-			this.addVector(worldRendererIn, tp10, 0.0f, 1.0f);
+			this.addQuad(worldRendererIn, tp00, tp01, tp11, tp10);
 			return;
 		}
 		TerrainQuad tQuad = new TerrainQuad(terrainMap.get(x, z), terrainMap.get(x, z + dz),
@@ -103,8 +106,22 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		int uvi = -1;
 		for (TerrainPoint tp : tQuad) {
 			float[] uvs = new float[] { 0.0f, 1.0f, 1.0f, 0.0f };
-			this.addVector(worldRendererIn, tp, uvs[++uvi % uvs.length], uvs[(uvi + 1) % uvs.length]);
+			// TODO Fix or remove
+//			this.addVector(worldRendererIn, tp, EnumFacing.UP.getDirectionVec(), uvs[++uvi % uvs.length], uvs[(uvi + 1) % uvs.length]);
 		}
+	}
+
+	private void addQuad(BufferBuilder worldRendererIn, TerrainPoint tp00, TerrainPoint tp01, TerrainPoint tp11, TerrainPoint tp10) {
+		Vec3f n1 = TerrainUtil.calculateNormal(tp11, tp01, tp00);
+		Vec3f n2 = TerrainUtil.calculateNormal(tp00, tp10, tp11);
+		
+		this.addVector(worldRendererIn, tp00, n1, 0.0f, 0.0f);
+		this.addVector(worldRendererIn, tp01, n1, 1.0f, 0.0f);
+		this.addVector(worldRendererIn, tp11, n1, 1.0f, 1.0f);
+		
+		this.addVector(worldRendererIn, tp11, n2, 1.0f, 1.0f);
+		this.addVector(worldRendererIn, tp10, n2, 0.0f, 1.0f);
+		this.addVector(worldRendererIn, tp00, n2, 0.0f, 0.0f);
 	}
 
 	@Override
@@ -113,7 +130,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			ready = false;
 			synchronized (lock) {
 				isDrawning = true;
-				buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
+				buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
 				int x0 = minimalXMesh;
 				int x1 = maximalXMesh;
 				int z0 = minimalZMesh;
@@ -162,7 +179,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		}
 	}
 
-	private void addVector(BufferBuilder worldRendererIn, TerrainPoint point, float u, float v) {
+	private void addVector(BufferBuilder worldRendererIn, TerrainPoint point, Vec3f n1, float u, float v) {
 		int bx = point.chunkX << MESH_SIZE_BIT_BLOCKS;
 		int bz = point.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int height = point.blockY;
@@ -171,7 +188,9 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		float red = (color >> 16 & 255) / 256f;
 		float green = (color >> 8 & 255) / 256f;
 		float blue = (color & 255) / 256f;
-		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(240, 0).color(red, green, blue, 1.0f).endVertex();
+		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
+		int skyLight = 240 - Math.max(cp.terrainRenderer.getSeaLevel() - height, 0) * 16;
+		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(skyLight, 0).color(red, green, blue, 1.0f).normal(n1.getX(), n1.getY(), n1.getZ()).endVertex();
 	}
 
 	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {

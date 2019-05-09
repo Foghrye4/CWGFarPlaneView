@@ -2,9 +2,11 @@ package cwgfarplaneview;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
 import static cwgfarplaneview.CWGFarPlaneViewMod.proxy;
+import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 
 import java.io.IOException;
 
+import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.TerrainPoint;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -31,10 +33,17 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 				int chunkX = byteBufInputStream.readInt();
 				int chunkZ = byteBufInputStream.readInt();
 				int blockY = byteBufInputStream.readInt();
-				tps[i] = new TerrainPoint(chunkX, chunkZ, blockY, byteBufInputStream.readInt(),
-						byteBufInputStream.readInt());
+				try {
+					tps[i] = new TerrainPoint(chunkX, chunkZ, blockY, byteBufInputStream.readInt(),
+							byteBufInputStream.readInt());
+				} catch (IncorrectTerrainDataException e) {
+					logger.catching(e);
+					break;
+				}
 			}
-			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.addToMap(tps);
+			mc.addScheduledTask(() -> {
+				((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.addToMap(tps);
+			});
 			break;
 		case FLUSH:
 			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.clear();

@@ -7,5 +7,13 @@ public class Vec3f {
 		y = yIn;
 		z = zIn;
 	}
-
+	public float getX() {
+		return x;
+	}
+	public float getY() {
+		return y;
+	}
+	public float getZ() {
+		return z;
+	}
 }

@@ -31,7 +31,6 @@ public class CWGFarPlaneViewEventHandler {
 		TerrainSurfaceBuilderWorker worker = new TerrainSurfaceBuilderWorker(player, (WorldServer) world);
 		workers.add(worker);
 		Thread thread = new Thread(worker, player.getName() + "'s terrain surface builder worker");
-		thread.setDaemon(true);
 		thread.setPriority(Thread.MIN_PRIORITY);
 		thread.start();
 	}

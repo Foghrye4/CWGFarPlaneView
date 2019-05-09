@@ -14,22 +14,22 @@ public class TerrainPoint implements XZAddressable {
 	public IBlockState blockState;
 	public Biome biome;
 
-	public TerrainPoint(int x, int z, int height, int blockStateIDIn, int biomeId) {
+	public TerrainPoint(int x, int z, int height, int blockStateIDIn, int biomeId) throws IncorrectTerrainDataException {
 		this(x, z, height, GameData.getBlockStateIDMap().getByValue(blockStateIDIn), Biome.getBiome(biomeId));
 	}
 
-	public TerrainPoint(int x, int z, int height, IBlockState blockStateIn, Biome biomeIn) {
+	public TerrainPoint(int x, int z, int height, IBlockState blockStateIn, Biome biomeIn) throws IncorrectTerrainDataException {
 		chunkX = x;
 		chunkZ = z;
 		blockY = height;
 		blockState = blockStateIn;
 		biome = biomeIn;
 		if (blockState == null)
-			throw new NullPointerException();
+			throw new IncorrectTerrainDataException("Blockstate is NULL");
 		if (blockState == Blocks.AIR.getDefaultState())
-			throw new IllegalStateException("Blockstate should not be AIR!");
+			throw new IncorrectTerrainDataException("Blockstate should not be AIR!");
 		if (biome == null)
-			throw new NullPointerException();
+			throw new IncorrectTerrainDataException("Biome is NULL");
 	}
 
 	@Override
@@ -52,7 +52,7 @@ public class TerrainPoint implements XZAddressable {
 		return nbt;
 	}
 
-	public static TerrainPoint fromNBT(NBTTagCompound nbt) {
+	public static TerrainPoint fromNBT(NBTTagCompound nbt) throws IncorrectTerrainDataException {
 		int x = nbt.getInteger("x");
 		int z = nbt.getInteger("z");
 		int y = nbt.getInteger("y");

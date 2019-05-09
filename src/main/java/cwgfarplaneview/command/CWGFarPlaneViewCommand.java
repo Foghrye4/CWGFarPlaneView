@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
+import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.TerrainPoint;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -44,8 +45,12 @@ public class CWGFarPlaneViewCommand extends CommandBase {
 				Random rand = new Random();
 				for (int ix = -32; ix < 32; ix++)
 					for (int iz = -32; iz < 32; iz++) {
-						tps.add(new TerrainPoint(ix, iz, rand.nextInt(16), Blocks.GRASS.getDefaultState(),
-								Biome.getBiome(rand.nextInt(256))));
+						try {
+							tps.add(new TerrainPoint(ix, iz, rand.nextInt(16), Blocks.GRASS.getDefaultState(),
+									Biome.getBiome(rand.nextInt(256))));
+						} catch (IncorrectTerrainDataException e) {
+							throw new CommandException(e.getMessage());
+						}
 					}
 				network.sendTerrainPointsToAllClients(tps);
 			} else if (args[0].equals("flush")) {

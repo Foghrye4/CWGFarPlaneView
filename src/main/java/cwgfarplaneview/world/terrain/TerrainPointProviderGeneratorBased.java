@@ -21,13 +21,13 @@ public class TerrainPointProviderGeneratorBased implements TerrainPointProvider 
 	}
 	
 	@Override
-	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) {
+	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) throws IncorrectTerrainDataException {
 		TerrainPoint point = this.getTerrainPointAt(meshX, meshZ, heightHint);
 		heightHint = point.blockY;
 		return point;
 	} 
 	
-	private TerrainPoint getTerrainPointAt(int meshX, int meshZ, int heightHint) {
+	private TerrainPoint getTerrainPointAt(int meshX, int meshZ, int heightHint) throws IncorrectTerrainDataException {
 		int cubeY = heightHint >> 4;
 		int cubeX = meshX << MESH_SIZE_BIT_CHUNKS;
 		int cubeZ = meshZ << MESH_SIZE_BIT_CHUNKS;
