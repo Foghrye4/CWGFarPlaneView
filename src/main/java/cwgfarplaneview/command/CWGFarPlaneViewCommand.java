@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.TerrainPoint;
@@ -40,28 +41,13 @@ public class CWGFarPlaneViewCommand extends CommandBase {
 		if (args.length < 1) {
 			throw new WrongUsageException(getUsage(sender), new Object[0]);
 		} else {
-			if (args[0].equals("test")) {
-				List<TerrainPoint> tps = new ArrayList<TerrainPoint>();
-				Random rand = new Random();
-				for (int ix = -32; ix < 32; ix++)
-					for (int iz = -32; iz < 32; iz++) {
-						try {
-							tps.add(new TerrainPoint(ix, iz, rand.nextInt(16), Blocks.GRASS.getDefaultState(),
-									Biome.getBiome(rand.nextInt(256))));
-						} catch (IncorrectTerrainDataException e) {
-							throw new CommandException(e.getMessage());
-						}
-					}
-				network.sendTerrainPointsToAllClients(tps);
-			} else if (args[0].equals("flush")) {
-				
+			if (args[0].equals("flush")) {
 				network.sendCommandFlush();
-			} else if (args[0].equals("getall")) {
-				
+			} else if (args[0].equals("info")) {
+				CWGFarPlaneViewMod.eventHandler.dumpProgressInfo();
 			} else {
 				throw new WrongUsageException(getUsage(sender), new Object[0]);
 			}
-
 		}
 	}
 }

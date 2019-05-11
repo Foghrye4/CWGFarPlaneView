@@ -32,7 +32,7 @@ public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvid
     private final BiomeSource biomeSource;
     private final SurfaceNoiseConsumer noiseConsumer;
 	private final World world;
-	private int heightHint = 64;
+	private int cubeHeightHint = 4;
     
     public TerrainPointProviderCWGInternalsBased(World worldIn, BiomeProvider biomeProvider, CustomGeneratorSettings settings, final long seed) {
         this.conf = settings;
@@ -107,24 +107,28 @@ public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvid
 	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) throws IncorrectTerrainDataException {
 		int cubeX = meshX << AddressUtil.MESH_SIZE_BIT_CHUNKS;
 		int cubeZ = meshZ << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeY = heightHint >> 4;
-		 for (Entry<IntAABB, TerrainPointProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
-			 if(entry.getKey().contains(cubeX, cubeY, cubeZ)) {
-				 return entry.getValue().getTerrainPointAt(meshX, meshZ);
-			 }
-		 }
-        while(!noiseConsumer.surfaceDetected) {
-    		cubeY = heightHint >> 4;
-            BlockPos start = new BlockPos(cubeX * 16, cubeY * 2, cubeZ * 16);
-            BlockPos end = start.add(4, 2, 4);
-            terrainBuilder.forEachScaled(start, end, new Vec3i(1, 8, 1), noiseConsumer);
-            if(noiseConsumer.isSurface)
-            	heightHint+=16;
-            else
-            	heightHint-=16;
-        }
-        noiseConsumer.reset();
-    	return new TerrainPoint(meshX, meshZ, noiseConsumer.surfaceHeight, noiseConsumer.blockState, getBiomeAt(cubeX, cubeZ));
+		while (!noiseConsumer.surfaceDetected) {
+			int cubeY = cubeHeightHint;
+			BlockPos start = new BlockPos(cubeX * 16, cubeY * 2, cubeZ * 16);
+			BlockPos end = start.add(1, 2, 1);
+			boolean runInSubLayer = false;
+			for (Entry<IntAABB, TerrainPointProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
+				if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
+					entry.getValue().terrainBuilder.forEachScaled(start, end, new Vec3i(1, 8, 1), noiseConsumer);
+					runInSubLayer = true;
+					break;
+				}
+			}
+			if (!runInSubLayer)
+				terrainBuilder.forEachScaled(start, end, new Vec3i(1, 8, 1), noiseConsumer);
+			if (noiseConsumer.isSurface)
+				cubeHeightHint++;
+			else
+				cubeHeightHint--;
+		}
+		noiseConsumer.reset();
+		return new TerrainPoint(meshX, meshZ, noiseConsumer.surfaceHeight, noiseConsumer.blockState,
+				getBiomeAt(cubeX, cubeZ));
 	}
 	
 	private Biome getBiomeAt(int x, int z) {

@@ -17,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.ReportedException;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.WorldServer;
 
 public class TerrainSurfaceBuilderWorker implements Runnable {
@@ -26,6 +27,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	private WorldSavedDataTerrainSurface data;
 	private TerrainPointProvider tpProvider;
 	private volatile boolean run = true;
+	public volatile boolean dumpProgressInfo = false;
 	public int minimalX;
 	public int minimalZ;
 	public int maximalX;
@@ -57,26 +59,38 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		List<TerrainPoint> pointsList = new ArrayList<TerrainPoint>();
 		EnumFacing closestSide = getSideClosestToPlayer(px,pz);
 		int pointsGeneratedThisTick = 0;
-		while (run && !player.isDead && closestSide != EnumFacing.UP && pointsGeneratedThisTick < 2048 && pointsList.size() < 4096) {
+		a:while (closestSide != EnumFacing.UP && pointsGeneratedThisTick < 2048 && pointsList.size() < 4096) {
 			if (closestSide.getAxis() == Axis.X) {
 				int x = closestSide == EnumFacing.EAST ?++maximalX : --minimalX;
 				for (int z = minimalZ; z <= maximalZ; z ++) {
 					if (this.addPointAt(pointsList, x, z))
 						pointsGeneratedThisTick++;
+					if(!run || player.isDead)
+						break a;
+					if(dumpProgressInfo)
+						this.dumpProgressInfo(pointsGeneratedThisTick, pointsList.size());
 				}
 			} else {
 				int z = closestSide == EnumFacing.SOUTH ? ++maximalZ : --minimalZ;
 				for (int x = minimalX; x <= maximalX; x ++) {
 					if (this.addPointAt(pointsList, x, z))
 						pointsGeneratedThisTick++;
+					if(!run || player.isDead)
+						break a;
+					if(dumpProgressInfo)
+						this.dumpProgressInfo(pointsGeneratedThisTick, pointsList.size());
 				}
 			}
 			closestSide = getSideClosestToPlayer(px,pz);
 		}
-		if (!world.playerEntities.isEmpty() && !pointsList.isEmpty()) {
-			logger.debug("Sending points");
-			network.sendTerrainPointsToAllClients(pointsList);
+		if (!player.isDead && !pointsList.isEmpty()) {
+			network.sendTerrainPointsToClient(player, pointsList);
 		}
+	}
+	
+	private void dumpProgressInfo(int generated, int overall) {
+		player.sendMessage(new TextComponentString(String.format("Generated: %d, Overall: %d", generated, overall)));
+		dumpProgressInfo = false;
 	}
 
 	private void reset() {

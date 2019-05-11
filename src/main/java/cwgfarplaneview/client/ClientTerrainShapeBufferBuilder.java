@@ -29,12 +29,14 @@ import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientTerrainShapeBufferBuilder implements Runnable {
 
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
 	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
+	private final ConcurrentLinkedQueue<TerrainPoint[]> pendingTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint[]>();
     private static final VertexFormat VERTEX_FORMAT = (new VertexFormat())
     		.addElement(DefaultVertexFormats.POSITION_3F)
     		.addElement(DefaultVertexFormats.TEX_2F)
@@ -64,51 +66,6 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 			this.addQuad(worldRendererIn, tp00, tp01, tp11, tp10);
 			return;
 		}
-		int dx = 1;
-		while (dx <= 32 && tp10 == null) {
-			dx <<= 1;
-			tp10 = terrainMap.get(x + dx, z);
-		}
-		if (tp10 == null)
-			return;
-		int dz = 1;
-		while (dz <= 32 && tp01 == null) {
-			dz <<= 1;
-			tp01 = terrainMap.get(x, z + dz);
-		}
-		if (tp01 == null)
-			return;
-		tp11 = terrainMap.get(x + dx, z + dz);
-		if (tp11 == null)
-			return;
-		boolean hasPointsBetween = false;
-		a: for (int ix = 0; ix <= dz; ix++) {
-			for (int iz = 0; iz <= dz; iz++) {
-				if ((ix != 0 && ix != dx || iz != 0 && iz != dz) && terrainMap.contains(x + dx, z + dz)) {
-					hasPointsBetween = true;
-					break a;
-				}
-			}
-		}
-		if (!hasPointsBetween) {
-			this.addQuad(worldRendererIn, tp00, tp01, tp11, tp10);
-			return;
-		}
-		TerrainQuad tQuad = new TerrainQuad(terrainMap.get(x, z), terrainMap.get(x, z + dz),
-				terrainMap.get(x + dx, z + dz), terrainMap.get(x + dx, z));
-		for (int ix = 0; ix <= dz; ix++) {
-			for (int iz = 0; iz <= dz; iz++) {
-				if ((ix != 0 && ix != dx || iz != 0 && iz != dz) && terrainMap.contains(x + dx, z + dz)) {
-					tQuad.split(terrainMap.get(x + dx, z + dz));
-				}
-			}
-		}
-		int uvi = -1;
-		for (TerrainPoint tp : tQuad) {
-			float[] uvs = new float[] { 0.0f, 1.0f, 1.0f, 0.0f };
-			// TODO Fix or remove
-//			this.addVector(worldRendererIn, tp, EnumFacing.UP.getDirectionVec(), uvs[++uvi % uvs.length], uvs[(uvi + 1) % uvs.length]);
-		}
 	}
 
 	private void addQuad(BufferBuilder worldRendererIn, TerrainPoint tp00, TerrainPoint tp01, TerrainPoint tp11, TerrainPoint tp10) {
@@ -129,6 +86,12 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		while (run) {
 			ready = false;
 			synchronized (lock) {
+				for (TerrainPoint[] points : pendingTerrainPointsUpdate) {
+					this.addToMap(points);
+				}
+				if (isDrawning) {
+					buffer.finishDrawing();
+				}
 				isDrawning = true;
 				buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
 				int x0 = minimalXMesh;
@@ -189,8 +152,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		float green = (color >> 8 & 255) / 256f;
 		float blue = (color & 255) / 256f;
 		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
-		int skyLight = 240 - Math.max(cp.terrainRenderer.getSeaLevel() - height, 0) * 16;
-		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(skyLight, 0).color(red, green, blue, 1.0f).normal(n1.getX(), n1.getY(), n1.getZ()).endVertex();
+		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(240, 0).color(red, green, blue, 1.0f).normal(n1.getX(), n1.getY(), n1.getZ()).endVertex();
 	}
 
 	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {
@@ -280,10 +242,14 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		return red << 16 | green << 8 | blue;
 	}
 
-	public void addToMap(TerrainPoint[] tps) {
+	public void schleduleAddToMap(TerrainPoint[] tps) {
+		this.pendingTerrainPointsUpdate.add(tps);
 		synchronized (lock) {
-			logger.debug("Recieveing points");
-			boolean needUpdate = false;
+			lock.notify();
+		}
+	}
+	
+	public void addToMap(TerrainPoint[] tps) {
 			for (TerrainPoint tp : tps) {
 				terrainMap.put(tp);
 				if (tp.getX() < this.minimalXMesh)
@@ -294,26 +260,7 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 					this.maximalXMesh = tp.getX();
 				if (tp.getZ() > this.maximalZMesh)
 					this.maximalZMesh = tp.getZ();
-
-				EntityPlayerSP player = Minecraft.getMinecraft().player;
-				int renderPosX = (int) (player.lastTickPosX);
-				int renderPosZ = (int) (player.lastTickPosZ);
-				renderPosX >>= 4;
-				renderPosZ >>= 4;
-				int dx = renderPosX - (tp.getX() << MESH_SIZE_BIT_CHUNKS);
-				int dz = renderPosZ - (tp.getZ() << MESH_SIZE_BIT_CHUNKS);
-				if (dx * dx < HORIZONT_DISTANCE_SQ || dz * dz < HORIZONT_DISTANCE_SQ) {
-					needUpdate = true;
-				}
 			}
-			if (needUpdate) {
-				if (isDrawning) {
-					isDrawning = false;
-					buffer.finishDrawing();
-				}
-				lock.notify();
-			}
-		}
 	}
 
 	public void clear() {

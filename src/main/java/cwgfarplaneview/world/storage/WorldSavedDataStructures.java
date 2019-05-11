@@ -3,9 +3,13 @@ package cwgfarplaneview.world.storage;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import com.google.common.collect.Multimap;
+import com.google.common.collect.HashMultimap;
+
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.save.SaveSection3D;
 import cwgfarplaneview.CWGFarPlaneViewMod;
+import cwgfarplaneview.util.IntAABBStructure;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
@@ -15,6 +19,7 @@ public class WorldSavedDataStructures extends WorldSavedData {
 	private static final String DATA_IDENTIFIER = CWGFarPlaneViewMod.MODID + "StructuresData";
 
 	public final ConcurrentLinkedDeque<EntryLocation3D> positionsDeque = new ConcurrentLinkedDeque<EntryLocation3D>();
+	public final Multimap<EntryLocation3D,IntAABBStructure> structuresMap = HashMultimap.create();
 	volatile public boolean isInitialized = false;
 
 	public WorldSavedDataStructures(String name) {

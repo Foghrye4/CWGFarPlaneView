@@ -41,9 +41,7 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 					break;
 				}
 			}
-			mc.addScheduledTask(() -> {
-				((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.addToMap(tps);
-			});
+			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.schleduleAddToMap(tps);
 			break;
 		case FLUSH:
 			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.clear();

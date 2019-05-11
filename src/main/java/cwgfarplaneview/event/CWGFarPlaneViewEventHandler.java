@@ -56,4 +56,10 @@ public class CWGFarPlaneViewEventHandler {
 			return false;
 		return true;
 	}
+
+	public void dumpProgressInfo() {
+		for (TerrainSurfaceBuilderWorker worker : workers) {
+			worker.dumpProgressInfo = true;
+		}
+	}
 }

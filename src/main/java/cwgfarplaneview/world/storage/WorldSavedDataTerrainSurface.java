@@ -21,7 +21,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	public static volatile WorldSavedDataTerrainSurface instance = null;
 	private static final Object lock = new Object();
 	private static final String DATA_IDENTIFIER = CWGFarPlaneViewMod.MODID + "Data";
-	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 8000);
+	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 10000);
 
 	public WorldSavedDataTerrainSurface(String name) {
 		super(name);

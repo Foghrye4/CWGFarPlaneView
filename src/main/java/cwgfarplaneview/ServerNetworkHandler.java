@@ -77,7 +77,7 @@ public class ServerNetworkHandler {
 		}
 	}
 	
-	public void sendTerrainPointsToAllClients(List<TerrainPoint> tps) {
+	public void sendTerrainPointsToClient(EntityPlayerMP player, List<TerrainPoint> tps) {
 		ByteBuf bb = Unpooled.buffer(1024);
 		PacketBuffer byteBufOutputStream = new PacketBuffer(bb);
 		byteBufOutputStream.writeByte(ClientCommands.RECIEVE_TERRAIN_DATA.ordinal());
@@ -89,7 +89,7 @@ public class ServerNetworkHandler {
 			byteBufOutputStream.writeInt(GameData.getBlockStateIDMap().get(tp.blockState));
 			byteBufOutputStream.writeInt(Biome.getIdForBiome(tp.biome));
 		}
-		getChannel().sendToAll(new FMLProxyPacket(byteBufOutputStream, MODID));
+		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
 	}
 
 	public void sendCommandFlush() {

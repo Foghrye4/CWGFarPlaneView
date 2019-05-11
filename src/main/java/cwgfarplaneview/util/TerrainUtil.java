@@ -4,9 +4,9 @@ import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.TerrainPoint;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.init.Blocks;
 import net.minecraft.world.biome.Biome;
 
 public class TerrainUtil {
@@ -52,5 +52,9 @@ public class TerrainUtil {
 		float d = nx * nx + ny * ny + nz * nz;
 		d = (float) Math.sqrt(d);
 		return new Vec3f(nx / d, ny / d, nz / d);
+	}
+	
+	public static boolean isAirOrWater(IBlockState state) {
+		return state == Blocks.AIR.getDefaultState() || state.getMaterial() == Material.WATER;
 	}
 }

@@ -1,12 +1,10 @@
 package cwgfarplaneview.world.terrain;
 
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.TerrainUtil.*;
 
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 

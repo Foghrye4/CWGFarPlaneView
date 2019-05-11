@@ -164,7 +164,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.pos(x, seaLevel, z).tex(u, v).lightmap(240, 0)
-		.color(0.137f, 0.192f, 0.78f, 1.0f).endVertex();
+		.color(0.0f, 0.0f, 0.0f, 1.0f).endVertex();
+//		.color(0.137f, 0.192f, 0.78f, 1.0f).endVertex();
 	}
 
 
