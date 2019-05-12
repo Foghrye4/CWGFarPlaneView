@@ -1,4 +1,4 @@
-package cwgfarplaneview.world.terrain;
+package cwgfarplaneview.world.terrain.flat;
 
 import static io.github.opencubicchunks.cubicchunks.api.util.Coords.blockToLocal;
 

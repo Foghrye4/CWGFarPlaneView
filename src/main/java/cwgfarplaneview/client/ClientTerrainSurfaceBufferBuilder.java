@@ -1,7 +1,6 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
-import static cwgfarplaneview.util.AddressUtil.HORIZONT_DISTANCE_SQ;
 import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CELLS;
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
@@ -12,8 +11,7 @@ import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.ClientProxy;
 import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.util.Vec3f;
-import cwgfarplaneview.world.terrain.TerrainPoint;
-import cwgfarplaneview.world.terrain.TerrainQuad;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockSand;
@@ -31,7 +29,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class ClientTerrainShapeBufferBuilder implements Runnable {
+public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
@@ -85,39 +83,39 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 	public void run() {
 		while (run) {
 			ready = false;
-			synchronized (lock) {
-				for (TerrainPoint[] points : pendingTerrainPointsUpdate) {
-					this.addToMap(points);
-				}
-				if (isDrawning) {
-					buffer.finishDrawing();
-				}
-				isDrawning = true;
-				buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
-				int x0 = minimalXMesh;
-				int x1 = maximalXMesh;
-				int z0 = minimalZMesh;
-				int z1 = maximalZMesh;
-				EntityPlayerSP player = Minecraft.getMinecraft().player;
-				if (player != null) {
-					int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
-					int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
-					x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
-					x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
-					z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
-					z1 = Math.min(z1, pmccz + MAX_UPDATE_DISTANCE_CELLS);
-				}
-				a: for (int x = x0; x <= x1; x++) {
-					for (int z = z0; z <= z1; z++) {
-						WorldClient world = Minecraft.getMinecraft().world;
-						if (world == null) {
-							break a;
-						}
-						this.addQuad(buffer, x, z);
+			for (TerrainPoint[] points : pendingTerrainPointsUpdate) {
+				this.addToMap(points);
+			}
+			if (isDrawning) {
+				buffer.finishDrawing();
+			}
+			isDrawning = true;
+			buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
+			int x0 = minimalXMesh;
+			int x1 = maximalXMesh;
+			int z0 = minimalZMesh;
+			int z1 = maximalZMesh;
+			EntityPlayerSP player = Minecraft.getMinecraft().player;
+			if (player != null) {
+				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
+				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
+				x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
+				x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
+				z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
+				z1 = Math.min(z1, pmccz + MAX_UPDATE_DISTANCE_CELLS);
+			}
+			a: for (int x = x0; x <= x1; x++) {
+				for (int z = z0; z <= z1; z++) {
+					WorldClient world = Minecraft.getMinecraft().world;
+					if (world == null) {
+						break a;
 					}
+					this.addQuad(buffer, x, z);
 				}
-				logger.debug("Ready-waiting");
-				ready = true;
+			}
+			logger.debug("Ready-waiting");
+			ready = true;
+			synchronized (lock) {
 				try {
 					lock.wait();
 				} catch (InterruptedException e) {
@@ -151,7 +149,6 @@ public class ClientTerrainShapeBufferBuilder implements Runnable {
 		float red = (color >> 16 & 255) / 256f;
 		float green = (color >> 8 & 255) / 256f;
 		float blue = (color & 255) / 256f;
-		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
 		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(240, 0).color(red, green, blue, 1.0f).normal(n1.getX(), n1.getY(), n1.getZ()).endVertex();
 	}
 

@@ -1,5 +1,6 @@
-package cwgfarplaneview.world.terrain;
+package cwgfarplaneview.world.terrain.flat;
 
+import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.util.XZAddressable;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;

@@ -5,8 +5,9 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.network;
 import java.util.HashSet;
 import java.util.Set;
 
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
-import cwgfarplaneview.world.terrain.TerrainSurfaceBuilderWorker;
+import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface2d;
+import cwgfarplaneview.world.terrain.flat.TerrainSurfaceBuilderWorker;
+import cwgfarplaneview.world.terrain.volumetric.TerrainVolumeBuilderWorker;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -18,6 +19,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 public class CWGFarPlaneViewEventHandler {
 
 	public static Set<TerrainSurfaceBuilderWorker> workers = new HashSet<TerrainSurfaceBuilderWorker>();
+	public static Set<TerrainVolumeBuilderWorker> volumeWorkers = new HashSet<TerrainVolumeBuilderWorker>();
 
 	@SubscribeEvent
 	public void onWorldLoadEvent(EntityJoinWorldEvent event) {

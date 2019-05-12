@@ -14,9 +14,9 @@ import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.save.SaveSection3D;
 import cwgfarplaneview.util.DiskDataUtil;
 import cwgfarplaneview.world.storage.WorldSavedDataStructures;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
+import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface2d;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import cwgfarplaneview.world.terrain.TerrainPoint;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import net.minecraft.block.state.IBlockState;
@@ -35,7 +35,7 @@ public class StructuresBuilderWorker implements Runnable {
 
 	private final WorldServer worldServer;
 	private WorldSavedDataStructures data;
-	private WorldSavedDataTerrainSurface surface;
+	private WorldSavedDataTerrainSurface2d surface;
 	private final byte[] emptyByteArray = new byte[4096];
 	private final NibbleArray emptyNibbleArray = new NibbleArray();
 	private int heightHint = 64;
@@ -96,6 +96,7 @@ public class StructuresBuilderWorker implements Runnable {
 					int maxSX = ix;
 					int maxSY = iy;
 					int maxSZ = iz;
+					int prevBlockCount = 0;
 					for(int i=0;i<EnumFacing.VALUES.length;i++) {
 						EnumFacing side = EnumFacing.VALUES[i];
 						int blocksCountStructure = 0;
@@ -108,7 +109,9 @@ public class StructuresBuilderWorker implements Runnable {
 						int maxSY1 = maxSY + faceVec.getY() > 0 ? 1 : 0;
 						int maxSZ1 = maxSZ + faceVec.getZ() > 0 ? 1 : 0;
 						int count = this.countBlockstates(ebs, state, minSX1, minSY1, minSZ1, maxSX1, maxSY1, maxSZ1);
-						int expectedMax = (maxSX1-minSX1);
+						if (count == prevBlockCount)
+							continue;
+						int expectedMax = (maxSX1-minSX1)*(maxSY1-minSY1)*(maxSZ1-minSZ1);
 					}
 				}
 	}
@@ -156,7 +159,7 @@ public class StructuresBuilderWorker implements Runnable {
 	public void run() {
 		try (SaveSection3D cubeIO = DiskDataUtil.createCubeIO(worldServer)) {
 			data = WorldSavedDataStructures.getOrCreateWorldSavedData(worldServer);
-			surface = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(worldServer);
+			surface = WorldSavedDataTerrainSurface2d.getOrCreateWorldSavedData(worldServer);
 			if (!data.isInitialized) {
 				data.initialize(cubeIO);
 			}

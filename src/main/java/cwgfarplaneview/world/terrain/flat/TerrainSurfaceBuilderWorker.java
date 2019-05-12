@@ -1,4 +1,4 @@
-package cwgfarplaneview.world.terrain;
+package cwgfarplaneview.world.terrain.flat;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.CWGFarPlaneViewMod.network;
@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface;
+import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface2d;
+import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
@@ -24,7 +25,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 
 	private EntityPlayerMP player;
 	private final WorldServer world;
-	private WorldSavedDataTerrainSurface data;
+	private WorldSavedDataTerrainSurface2d data;
 	private TerrainPointProvider tpProvider;
 	private volatile boolean run = true;
 	public volatile boolean dumpProgressInfo = false;
@@ -139,10 +140,10 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	@Override
 	public void run() {
 		try {
-			data = WorldSavedDataTerrainSurface.getOrCreateWorldSavedData(world);
+			data = WorldSavedDataTerrainSurface2d.getOrCreateWorldSavedData(world);
 		} catch (ReportedException e) {
 			logger.catching(e);
-			data = new WorldSavedDataTerrainSurface();
+			data = new WorldSavedDataTerrainSurface2d();
 		}
 		try {
 			while (run && !player.isDead) {

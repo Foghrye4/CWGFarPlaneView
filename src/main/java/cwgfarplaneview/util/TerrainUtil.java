@@ -3,7 +3,8 @@ package cwgfarplaneview.util;
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import cwgfarplaneview.world.terrain.TerrainPoint;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
+import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -56,5 +57,29 @@ public class TerrainUtil {
 	
 	public static boolean isAirOrWater(IBlockState state) {
 		return state == Blocks.AIR.getDefaultState() || state.getMaterial() == Material.WATER;
+	}
+
+	public static Vec3f calculateNormal(TerrainPoint3D tp1, TerrainPoint3D tp2, TerrainPoint3D tp3) {
+		int bx1 = tp1.cubeX;
+		int bz1 = tp1.cubeZ;
+		int by1 = tp1.cubeY;
+		int bx2 = tp2.cubeX;
+		int bz2 = tp2.cubeZ;
+		int by2 = tp2.cubeY;
+		int bx3 = tp3.cubeX;
+		int bz3 = tp3.cubeZ;
+		int by3 = tp3.cubeY;
+		int v1x = bx1 - bx2;
+		int v1y = by1 - by2;
+		int v1z = bz1 - bz2;
+		int v2x = bx3 - bx2;
+		int v2y = by3 - by2;
+		int v2z = bz3 - bz2;
+		int nx = v1y * v2z - v1z * v2y;
+		int ny = v1z * v2x - v1x * v2z;
+		int nz = v1x * v2y - v1y * v2z;
+		float d = nx * nx + ny * ny + nz * nz;
+		d = (float) Math.sqrt(d);
+		return new Vec3f(nx / d, ny / d, nz / d);
 	}
 }

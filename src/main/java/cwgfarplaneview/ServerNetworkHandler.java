@@ -18,8 +18,8 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.*;
 import java.io.IOException;
 import java.util.List;
 
-import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.terrain.TerrainPoint;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
+import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -35,7 +35,7 @@ public class ServerNetworkHandler {
 	}
 
 	public enum ClientCommands {
-		RECIEVE_TERRAIN_DATA, FLUSH, RECIEVE_SEA_LEVEL;
+		RECIEVE_TERRAIN_DATA, FLUSH, RECIEVE_SEA_LEVEL, RECIEVE_3DTERRAIN_DATA;
 	}
 	
 	protected FMLEventChannel getChannel() {
@@ -119,6 +119,21 @@ public class ServerNetworkHandler {
 		PacketBuffer byteBufOutputStream = new PacketBuffer(bb);
 		byteBufOutputStream.writeByte(ClientCommands.RECIEVE_SEA_LEVEL.ordinal());
 		byteBufOutputStream.writeInt(seaLevel);
+		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
+	}
+
+	public void send3DTerrainPointsToClient(EntityPlayerMP player, List<TerrainPoint3D> tps) {
+		ByteBuf bb = Unpooled.buffer(1024);
+		PacketBuffer byteBufOutputStream = new PacketBuffer(bb);
+		byteBufOutputStream.writeByte(ClientCommands.RECIEVE_3DTERRAIN_DATA.ordinal());
+		byteBufOutputStream.writeInt(tps.size());
+		for (TerrainPoint3D tp : tps) {
+			byteBufOutputStream.writeInt(tp.getX());
+			byteBufOutputStream.writeInt(tp.getY());
+			byteBufOutputStream.writeInt(tp.getZ());
+			byteBufOutputStream.writeInt(GameData.getBlockStateIDMap().get(tp.blockState));
+			byteBufOutputStream.writeInt(Biome.getIdForBiome(tp.biome));
+		}
 		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
 	}
 }

@@ -9,7 +9,7 @@ import java.util.Random;
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import cwgfarplaneview.world.terrain.TerrainPoint;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;

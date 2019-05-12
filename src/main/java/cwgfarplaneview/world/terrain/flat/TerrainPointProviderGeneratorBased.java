@@ -1,8 +1,9 @@
-package cwgfarplaneview.world.terrain;
+package cwgfarplaneview.world.terrain.flat;
 
 import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
 import static cwgfarplaneview.util.TerrainUtil.*;
 
+import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import net.minecraft.world.WorldServer;

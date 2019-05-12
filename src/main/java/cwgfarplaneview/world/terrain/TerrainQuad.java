@@ -5,6 +5,7 @@ import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import cwgfarplaneview.util.TerrainUtil;
+import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 
 public class TerrainQuad implements Iterable<TerrainPoint> {
 

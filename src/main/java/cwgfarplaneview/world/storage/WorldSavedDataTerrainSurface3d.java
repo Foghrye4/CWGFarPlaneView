@@ -8,26 +8,26 @@ import java.io.IOException;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import cwgfarplaneview.world.terrain.TerrainPoint;
-import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
+import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
+import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.WorldSavedData;
 
-public class WorldSavedDataTerrainSurface extends WorldSavedData {
+public class WorldSavedDataTerrainSurface3d extends WorldSavedData {
 
-	public static volatile WorldSavedDataTerrainSurface instance = null;
+	public static volatile WorldSavedDataTerrainSurface3d instance = null;
 	private static final Object lock = new Object();
-	private static final String DATA_IDENTIFIER = CWGFarPlaneViewMod.MODID + "Data";
-	private final XZMap<TerrainPoint> terrainMap = new XZMap<TerrainPoint>(0.8f, 10000);
+	private static final String DATA_IDENTIFIER = CWGFarPlaneViewMod.MODID + "3DData";
+	private final XYZMap<TerrainPoint3D> terrainMap = new XYZMap<TerrainPoint3D>(0.8f, 10000);
 
-	public WorldSavedDataTerrainSurface(String name) {
+	public WorldSavedDataTerrainSurface3d(String name) {
 		super(name);
 	}
 
-	public WorldSavedDataTerrainSurface() {
+	public WorldSavedDataTerrainSurface3d() {
 		this(DATA_IDENTIFIER);
 	}
 	
@@ -36,9 +36,9 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 		synchronized (lock) {
 			NBTTagList tp = nbt.getTagList("terrainMap", 10);
 			for (int i = 0; i < tp.tagCount(); i++) {
-				TerrainPoint point;
+				TerrainPoint3D point;
 				try {
-					point = TerrainPoint.fromNBT(tp.getCompoundTagAt(i));
+					point = TerrainPoint3D.fromNBT(tp.getCompoundTagAt(i));
 					this.addToMap(point);
 				} catch (IncorrectTerrainDataException e) {
 					e.printStackTrace();
@@ -48,7 +48,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 		}
 	}
 
-	public void addToMap(TerrainPoint value) {
+	public void addToMap(TerrainPoint3D value) {
 		synchronized (lock) {
 			terrainMap.put(value);
 			this.markDirty();
@@ -59,7 +59,7 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
 		synchronized (lock) {
 			NBTTagList tp = new NBTTagList();
-			for (TerrainPoint point : getTerrainMap()) {
+			for (TerrainPoint3D point : getTerrainMap()) {
 				tp.appendTag(point.toNBT());
 			}
 			compound.setTag("terrainMap", tp);
@@ -67,11 +67,11 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 		}
 	}
 
-	public static WorldSavedDataTerrainSurface getOrCreateWorldSavedData(World worldIn) {
+	public static WorldSavedDataTerrainSurface3d getOrCreateWorldSavedData(World worldIn) {
 		if (instance != null)
 			return instance;
 		synchronized (lock) {
-			WorldSavedDataTerrainSurface data = new WorldSavedDataTerrainSurface(DATA_IDENTIFIER);
+			WorldSavedDataTerrainSurface3d data = new WorldSavedDataTerrainSurface3d(DATA_IDENTIFIER);
 			File file1 = worldIn.getSaveHandler().getMapFileFromName(DATA_IDENTIFIER);
 			if (file1 != null && file1.exists()) {
 				try (FileInputStream fileinputstream = new FileInputStream(file1)) {
@@ -109,13 +109,13 @@ public class WorldSavedDataTerrainSurface extends WorldSavedData {
 		}
 	}
 
-	public TerrainPoint get(int x, int z) {
+	public TerrainPoint3D get(int x, int y, int z) {
 		synchronized (lock) {
-			return getTerrainMap().get(x, z);
+			return getTerrainMap().get(x, y, z);
 		}
 	}
 
-	public XZMap<TerrainPoint> getTerrainMap() {
+	public XYZMap<TerrainPoint3D> getTerrainMap() {
 		synchronized (lock) {
 			return terrainMap;
 		}

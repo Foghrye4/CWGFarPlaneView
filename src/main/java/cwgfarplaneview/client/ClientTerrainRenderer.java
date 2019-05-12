@@ -25,7 +25,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private static final ResourceLocation TERRAIN_TEXTURE = new ResourceLocation(MODID,
 			"textures/terrain/white_noise.png");
 
-	public ClientTerrainShapeBufferBuilder terrainRenderWorker = new ClientTerrainShapeBufferBuilder();
+	public ClientTerrainSurfaceBufferBuilder terrainRenderWorker = new ClientTerrainSurfaceBufferBuilder();
 
 	public void init() {
 		Thread thread = new Thread(terrainRenderWorker, "CWGFarPlaneView client surface renderer");
@@ -165,7 +165,6 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.pos(x, seaLevel, z).tex(u, v).lightmap(240, 0)
 		.color(0.0f, 0.0f, 0.0f, 1.0f).endVertex();
-//		.color(0.137f, 0.192f, 0.78f, 1.0f).endVertex();
 	}
 
 
