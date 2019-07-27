@@ -8,13 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface2d;
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface3d;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
-import io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
@@ -27,7 +23,8 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	private EntityPlayerMP player;
 	private final WorldServer world;
 	private WorldSavedDataTerrainSurface3d data;
-	private TerrainPoint3DProvider tpProvider;
+	private TerrainPoint3DProvider diskTPProvider;
+	private TerrainPoint3DProvider generatorTPProvider;
 	private volatile boolean run = true;
 	public volatile boolean dumpProgressInfo = false;
 	public int minimalX;
@@ -36,12 +33,14 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	public int maximalX;
 	public int maximalY;
 	public int maximalZ;
+	private final Object lock = new Object();
 
 	public TerrainVolumeBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
 		world = worldServerIn;
-		tpProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
+		generatorTPProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
 				CustomGeneratorSettings.load(world), world.getSeed());
+		diskTPProvider = new TerrainPoint3DProviderDiskData(world);
 		minimalX = player.chunkCoordX;
 		minimalY = player.chunkCoordY;
 		minimalZ = player.chunkCoordZ;
@@ -61,7 +60,7 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 		List<TerrainPoint3D> pointsList = new ArrayList<TerrainPoint3D>();
 		EnumFacing closestSide = getSideClosestToPlayer(px, py, pz);
 		int pointsGeneratedThisTick = 0;
-		a: while (closestSide != null && pointsGeneratedThisTick < 2048 && pointsList.size() < 4096) {
+		a: while (closestSide != null && pointsGeneratedThisTick < 204 && pointsList.size() < 409) {
 			if (closestSide.getAxis() == Axis.X) {
 				int x = closestSide == EnumFacing.EAST ? ++maximalX : --minimalX;
 				for (int y = minimalY; y <= maximalY; y++) {
@@ -104,10 +103,19 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 		if (!player.isDead && !pointsList.isEmpty()) {
 			network.send3DTerrainPointsToClient(player, pointsList);
 		}
+		if (closestSide == null) {
+			try {
+				synchronized (lock) {
+					lock.wait(2500);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private void dumpProgressInfo(int generated, int overall) {
-		player.sendMessage(new TextComponentString(String.format("Generated: %d, Overall: %d", generated, overall)));
+		player.sendMessage(new TextComponentString(String.format("Volumetric generated: %d, Overall: %d", generated, overall)));
 		dumpProgressInfo = false;
 	}
 
@@ -122,10 +130,13 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			throws IncorrectTerrainDataException {
 		boolean newlyGenerated = false;
 		TerrainPoint3D point = data.get(x, y, z);
-		if (point == null) {
-			point = this.tpProvider.getTerrainPointAt(x, y, z);
-			data.addToMap(point);
+/*		if (point == null) {
 			newlyGenerated = true;
+			point = this.diskTPProvider.getTerrainPointAt(x, y, z);
+		}*/
+		if (point == null) {
+			newlyGenerated = true;
+			point = this.generatorTPProvider.getTerrainPointAt(x, y, z);
 		}
 		pointsList.add(point);
 		return newlyGenerated;
@@ -172,17 +183,20 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			data = new WorldSavedDataTerrainSurface3d();
 		}
 		try {
+			synchronized (lock) {
+				lock.wait(15000);
+			}
 			while (run && !player.isDead) {
 				tick();
 			}
 			logger.info("Finishing terrain builder thread");
 			data.save(world);
 			logger.info("Terrain data saved");
-		} catch (IncorrectTerrainDataException | ReportedException e) {
+		} catch (IncorrectTerrainDataException | ReportedException | InterruptedException e) {
 			logger.catching(e);
 		} finally {
 			run = false;
-			CWGFarPlaneViewEventHandler.workers.remove(this);
+			CWGFarPlaneViewEventHandler.volumeWorkers.remove(this);
 		}
 	}
 

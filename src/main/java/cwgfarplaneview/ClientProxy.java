@@ -19,7 +19,7 @@ public class ClientProxy extends ServerProxy {
 	@SubscribeEvent
 	public void onWorldLoadEvent(WorldEvent.Load event) {
 		World world = event.getWorld();
-		if (!world.isRemote)
+		if (!world.isRemote || world.provider.getDimension() != 0)
 			return;
 		world.provider.setSkyRenderer(terrainRenderer);
 		MinecraftForge.EVENT_BUS.register(terrainRenderer);

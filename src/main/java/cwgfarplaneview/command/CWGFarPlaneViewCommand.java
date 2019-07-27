@@ -45,6 +45,8 @@ public class CWGFarPlaneViewCommand extends CommandBase {
 				network.sendCommandFlush();
 			} else if (args[0].equals("info")) {
 				CWGFarPlaneViewMod.eventHandler.dumpProgressInfo();
+			} else if (args[0].equals("test")) {
+				network.testTerrainCubeRender((EntityPlayerMP) sender);
 			} else {
 				throw new WrongUsageException(getUsage(sender), new Object[0]);
 			}

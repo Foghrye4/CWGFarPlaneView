@@ -8,6 +8,7 @@ import java.io.IOException;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.flat.TerrainPoint;
+import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
@@ -41,15 +42,35 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 					break;
 				}
 			}
-			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.schleduleAddToMap(tps);
+			((ClientProxy) proxy).terrainRenderer.terrainSurfaceRenderWorker.schleduleAddToMap(tps);
 			break;
 		case FLUSH:
-			((ClientProxy) proxy).terrainRenderer.terrainRenderWorker.clear();
+			((ClientProxy) proxy).terrainRenderer.terrainSurfaceRenderWorker.clear();
 			break;
 		case RECIEVE_SEA_LEVEL:
 			mc.addScheduledTask(() -> {
 				((ClientProxy) proxy).terrainRenderer.setSeaLevel(byteBufInputStream.readInt());
 			});
+			break;
+		case RECIEVE_3DTERRAIN_DATA:
+			amount = byteBufInputStream.readInt();
+			TerrainPoint3D[] tps3d = new TerrainPoint3D[amount];
+			for (int i = 0; i < amount; i++) {
+				int cubeX = byteBufInputStream.readInt();
+				int cubeY = byteBufInputStream.readInt();
+				int cubeZ = byteBufInputStream.readInt();
+				byte localX = byteBufInputStream.readByte();
+				byte localY = byteBufInputStream.readByte();
+				byte localZ = byteBufInputStream.readByte();
+				try {
+					tps3d[i] = new TerrainPoint3D(cubeX, cubeY, cubeZ, localX, localY, localZ, byteBufInputStream.readInt(),
+							byteBufInputStream.readInt());
+				} catch (IncorrectTerrainDataException e) {
+					logger.catching(e);
+					break;
+				}
+			}
+			((ClientProxy) proxy).terrainRenderer.terrain3DShapeRenderWorker.schleduleAddToMap(tps3d);
 			break;
 		default:
 			break;

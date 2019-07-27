@@ -25,20 +25,27 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private static final ResourceLocation TERRAIN_TEXTURE = new ResourceLocation(MODID,
 			"textures/terrain/white_noise.png");
 
-	public ClientTerrainSurfaceBufferBuilder terrainRenderWorker = new ClientTerrainSurfaceBufferBuilder();
+	public ClientTerrainSurfaceBufferBuilder terrainSurfaceRenderWorker = new ClientTerrainSurfaceBufferBuilder();
+	public ClientTerrain3DShapeBufferBuilder terrain3DShapeRenderWorker = new ClientTerrain3DShapeBufferBuilder();
 
 	public void init() {
-		Thread thread = new Thread(terrainRenderWorker, "CWGFarPlaneView client surface renderer");
+		Thread thread = new Thread(terrainSurfaceRenderWorker, "CWGFarPlaneView client surface renderer");
 		thread.setDaemon(true);
 		thread.setPriority(Thread.MIN_PRIORITY);
 		thread.start();
 		logger.debug("Client surface renderer initialized.");
+		thread = new Thread(terrain3DShapeRenderWorker, "CWGFarPlaneView client volumetric renderer");
+		thread.setDaemon(true);
+		thread.setPriority(Thread.MIN_PRIORITY);
+		thread.start();
+		logger.debug("Client volumetric renderer initialized.");
 	}
 
 	private float fov = 70.0f;
 	private int seaLevel = 64;
 	private float prevFarPlane = FAR_PLANE;
-	private int terrainDisplayList = -1;
+	private int terrainSurfaceDisplayList = -1;
+	private int terrainVolumetricDisplayList = -1;
 	private int seaDisplayList = -1;
 	private int backgroundDisplayList = -1;
 
@@ -86,14 +93,17 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		
 		// Terrain
 		GL11.glPushMatrix();
-//		LightHelper.enableLight(world, partialTicks);
 		GL11.glTranslatef(-renderPosX, 0.5f - renderPosY, -renderPosZ);
-		if (terrainRenderWorker.ready && terrainRenderWorker.isDrawning) {
-			compileDisplayList(world);
-			terrainRenderWorker.ready = false;
+		if (terrainSurfaceRenderWorker.ready && terrainSurfaceRenderWorker.isDrawning) {
+			compileSurfaceDisplayList(world);
+			terrainSurfaceRenderWorker.ready = false;
 		}
-		GL11.glCallList(this.terrainDisplayList);
-//		LightHelper.disableLight();
+		if (terrain3DShapeRenderWorker.ready && terrain3DShapeRenderWorker.isDrawning) {
+			compileVolumetricDisplayList(world);
+			terrain3DShapeRenderWorker.ready = false;
+		}
+		GL11.glCallList(this.terrainSurfaceDisplayList);
+//		GL11.glCallList(this.terrainVolumetricDisplayList);
 		GL11.glPopMatrix();
 
 		// Sea
@@ -168,11 +178,18 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	}
 
 
-	private void compileDisplayList(WorldClient world) {
-		if (this.terrainDisplayList == -1) {
-			this.terrainDisplayList = GLAllocation.generateDisplayLists(1);
+	private void compileSurfaceDisplayList(WorldClient world) {
+		if (this.terrainSurfaceDisplayList == -1) {
+			this.terrainSurfaceDisplayList = GLAllocation.generateDisplayLists(1);
 		}
-		terrainRenderWorker.draw(this.terrainDisplayList);
+		terrainSurfaceRenderWorker.draw(this.terrainSurfaceDisplayList);
+	}
+	
+	private void compileVolumetricDisplayList(WorldClient world) {
+		if (this.terrainVolumetricDisplayList == -1) {
+			this.terrainVolumetricDisplayList = GLAllocation.generateDisplayLists(1);
+		}
+		terrain3DShapeRenderWorker.draw(this.terrainVolumetricDisplayList);
 	}
 
 	@SubscribeEvent

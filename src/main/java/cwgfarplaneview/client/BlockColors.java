@@ -41,22 +41,24 @@ public class BlockColors {
 		ByteBuffer buffer = ByteBuffer.allocateDirect(pixels.length);
 		GL11.glGetTexImage(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 		buffer.get(pixels);
-		logger.debug(String.format("Allocated %d x %d pixel buffer", width, height));
 		for (IBlockState state : GameData.getBlockStateIDMap()) {
 			int color = this.getBlockColor(state, width, height, pixels);
 			map.put(state, color);
+			logger.debug(String.format("Putting color %d for state %s", color, state));
 		}
 	}
 
 	private int getBlockColor(IBlockState state, int width, int height, byte[] pixels) {
 		Minecraft mc = Minecraft.getMinecraft();
 		IBakedModel model = mc.getBlockRendererDispatcher().getModelForState(state);
-		if (model == null)
+		if (model == null) {
+			logger.debug(String.format("No model for state %s", state));
 			return 0;
-		if(!(model instanceof MultipartBakedModel) 
-				&&!(model instanceof WeightedBakedModel) 
-				&&!(model instanceof SimpleBakedModel))
+		}
+		if(!model.getClass().getName().startsWith("net.minecraft.") && !model.getClass().getName().startsWith("net.minecraftforge.")) {
+			logger.debug(String.format("Model class of %s is instance of %s", state, model.getClass().getName()));
 			return 0;
+		}
 		List<BakedQuad> quads = new ArrayList<BakedQuad>();
 		for (EnumFacing enumfacing : EnumFacing.values()) {
 			quads.addAll(model.getQuads(state, enumfacing, 0));
@@ -90,8 +92,9 @@ public class BlockColors {
 				}
 			}
 		}
-		if (alphaSum == 0)
+		if (alphaSum == 0) {
 			return 0;
+		}
 		rSum = rSum * 255 / alphaSum;
 		gSum = gSum * 255 / alphaSum;
 		bSum = bSum * 255 / alphaSum;

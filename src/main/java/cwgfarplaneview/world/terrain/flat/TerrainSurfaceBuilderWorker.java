@@ -33,6 +33,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	public int minimalZ;
 	public int maximalX;
 	public int maximalZ;
+	private final Object lock = new Object();
 
 	public TerrainSurfaceBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
@@ -84,8 +85,18 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			}
 			closestSide = getSideClosestToPlayer(px,pz);
 		}
+			
 		if (!player.isDead && !pointsList.isEmpty()) {
 			network.sendTerrainPointsToClient(player, pointsList);
+		}
+		if (closestSide == EnumFacing.UP) {
+			try {
+				synchronized (lock) {
+					lock.wait(1000);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -146,13 +157,16 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			data = new WorldSavedDataTerrainSurface2d();
 		}
 		try {
+			synchronized (lock) {
+				lock.wait(10000);
+			}
 			while (run && !player.isDead) {
 				tick();
 			}
 			logger.info("Finishing terrain builder thread");
 			data.save(world);
 			logger.info("Terrain data saved");
-		} catch (IncorrectTerrainDataException | ReportedException e) {
+		} catch (IncorrectTerrainDataException | ReportedException | InterruptedException e) {
 			logger.catching(e);
 		} finally {
 			run = false;

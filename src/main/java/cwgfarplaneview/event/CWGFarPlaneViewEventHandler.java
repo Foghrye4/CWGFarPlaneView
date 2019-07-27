@@ -35,6 +35,11 @@ public class CWGFarPlaneViewEventHandler {
 		Thread thread = new Thread(worker, player.getName() + "'s terrain surface builder worker");
 		thread.setPriority(Thread.MIN_PRIORITY);
 		thread.start();
+		/*		TerrainVolumeBuilderWorker volumetricWorker = new TerrainVolumeBuilderWorker(player, (WorldServer) world);
+		volumeWorkers.add(volumetricWorker);
+		Thread thread2 = new Thread(volumetricWorker, player.getName() + "'s terrain volumetric builder worker");
+		thread2.setPriority(Thread.MIN_PRIORITY);
+		thread2.start();*/
 	}
 
 	@SubscribeEvent
@@ -43,6 +48,8 @@ public class CWGFarPlaneViewEventHandler {
 		if (!isRenderableWorld(world))
 			return;
 		for (TerrainSurfaceBuilderWorker worker : workers)
+			worker.stop();
+		for (TerrainVolumeBuilderWorker worker : volumeWorkers)
 			worker.stop();
 		network.sendCommandFlush();
 	}
@@ -63,5 +70,7 @@ public class CWGFarPlaneViewEventHandler {
 		for (TerrainSurfaceBuilderWorker worker : workers) {
 			worker.dumpProgressInfo = true;
 		}
+		for (TerrainVolumeBuilderWorker worker : volumeWorkers)
+			worker.dumpProgressInfo = true;
 	}
 }

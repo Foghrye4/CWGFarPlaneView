@@ -1,6 +1,8 @@
 package cwgfarplaneview;
 
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Biomes;
+import net.minecraft.init.Blocks;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
@@ -131,9 +133,63 @@ public class ServerNetworkHandler {
 			byteBufOutputStream.writeInt(tp.getX());
 			byteBufOutputStream.writeInt(tp.getY());
 			byteBufOutputStream.writeInt(tp.getZ());
+			byteBufOutputStream.writeByte(tp.localX);
+			byteBufOutputStream.writeByte(tp.localY);
+			byteBufOutputStream.writeByte(tp.localZ);
 			byteBufOutputStream.writeInt(GameData.getBlockStateIDMap().get(tp.blockState));
 			byteBufOutputStream.writeInt(Biome.getIdForBiome(tp.biome));
 		}
 		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
+	}
+	
+	public void testTerrainCubeRender(EntityPlayerMP player) {
+		ByteBuf bb = Unpooled.buffer(1024);
+		PacketBuffer byteBufOutputStream = new PacketBuffer(bb);
+		byteBufOutputStream.writeByte(ClientCommands.RECIEVE_3DTERRAIN_DATA.ordinal());
+		byteBufOutputStream.writeInt(8);
+		int cubeX = player.chunkCoordX;
+		int cubeY = player.chunkCoordY;
+		int cubeZ = player.chunkCoordZ;
+		byteBufOutputStream.writeInt(cubeX);
+		byteBufOutputStream.writeInt(cubeY);
+		byteBufOutputStream.writeInt(cubeZ);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX+1);
+		byteBufOutputStream.writeInt(cubeY);
+		byteBufOutputStream.writeInt(cubeZ);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX);
+		byteBufOutputStream.writeInt(cubeY+1);
+		byteBufOutputStream.writeInt(cubeZ);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX);
+		byteBufOutputStream.writeInt(cubeY);
+		byteBufOutputStream.writeInt(cubeZ+1);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX+1);
+		byteBufOutputStream.writeInt(cubeY+1);
+		byteBufOutputStream.writeInt(cubeZ);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX+1);
+		byteBufOutputStream.writeInt(cubeY);
+		byteBufOutputStream.writeInt(cubeZ+1);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX);
+		byteBufOutputStream.writeInt(cubeY+1);
+		byteBufOutputStream.writeInt(cubeZ+1);
+		this.addBlankTPData(byteBufOutputStream);
+		byteBufOutputStream.writeInt(cubeX+1);
+		byteBufOutputStream.writeInt(cubeY+1);
+		byteBufOutputStream.writeInt(cubeZ+1);
+		this.addBlankTPData(byteBufOutputStream);
+		getChannel().sendTo(new FMLProxyPacket(byteBufOutputStream, MODID), player);
+	}
+	
+	private void addBlankTPData(PacketBuffer byteBufOutputStream) {
+		byteBufOutputStream.writeByte(0);
+		byteBufOutputStream.writeByte(0);
+		byteBufOutputStream.writeByte(0);
+		byteBufOutputStream.writeInt(GameData.getBlockStateIDMap().get(Blocks.STONE.getDefaultState()));
+		byteBufOutputStream.writeInt(Biome.getIdForBiome(Biomes.PLAINS));
 	}
 }
