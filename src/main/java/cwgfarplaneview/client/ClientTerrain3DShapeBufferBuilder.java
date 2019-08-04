@@ -123,9 +123,13 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	private TerrainPoint3D searchUp(TerrainPoint3D original) {
 		TerrainPoint3D toReturn = original;
 		int x = original.cubeX;
+		int y0 = original.cubeY;
 		int z = original.cubeZ;
-		for (int y = original.cubeY + 1; y <= original.cubeY + 3; y++) {
-			TerrainPoint3D tp = terrainMap.get(x, y, z);
+		TerrainPoint3D tp = terrainMap.get(x, y0 + 3, z);
+		if (tp != null && tp.isVisible())
+			return toReturn;
+		for (int y = y0 + 1; y <= y0 + 2; y++) {
+			tp = terrainMap.get(x, y, z);
 			if (tp == null || !tp.isVisible())
 				return toReturn;
 			toReturn = tp;
@@ -136,9 +140,13 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	private TerrainPoint3D searchDown(TerrainPoint3D original) {
 		TerrainPoint3D toReturn = original;
 		int x = original.cubeX;
+		int y0 = original.cubeY;
 		int z = original.cubeZ;
-		for (int y = original.cubeY - 1; y >= original.cubeY - 3; y--) {
-			TerrainPoint3D tp = terrainMap.get(x, y, z);
+		TerrainPoint3D tp = terrainMap.get(x, y0 - 3, z);
+		if (tp != null && tp.isVisible())
+			return toReturn;
+		for (int y = y0 - 1; y >= y0 - 2; y--) {
+			tp = terrainMap.get(x, y, z);
 			if (tp == null || !tp.isVisible())
 				return toReturn;
 			toReturn = tp;

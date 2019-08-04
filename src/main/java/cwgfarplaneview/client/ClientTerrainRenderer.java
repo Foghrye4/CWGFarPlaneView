@@ -5,6 +5,9 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.util.AddressUtil.CLOSE_PLANE;
 import static cwgfarplaneview.util.AddressUtil.FAR_PLANE;
 
+import java.nio.FloatBuffer;
+
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
@@ -48,11 +51,23 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private int terrainVolumetricDisplayList = -1;
 	private int seaDisplayList = -1;
 	private int backgroundDisplayList = -1;
+    private static final FloatBuffer fogColor = BufferUtils.createFloatBuffer(4);
 
 	@Override
 	public void render(float partialTicks, WorldClient world, Minecraft mc) {
+/*		float red = 0.0f;
+		float green = 0.8f;
+		float blue = 1.0f;
+		GL11.glClearColor(red, green, blue, 1.0f);
+		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+		fogColor.put(red);
+		fogColor.put(green);
+		fogColor.put(blue);
+		fogColor.put(1.0f);
+		fogColor.flip();
+		GL11.glFog(GL11.GL_FOG_COLOR, fogColor);*/
 		world.provider.setSkyRenderer(null);
-		mc.renderGlobal.renderSky(partialTicks, 0);
+		mc.renderGlobal.renderSky(partialTicks, 2);
 		world.provider.setSkyRenderer(this);
 		GlStateManager.matrixMode(5889);
 		GlStateManager.loadIdentity();
@@ -82,7 +97,6 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			this.compileBackgroundDisplayList();
 			prevFarPlane = FAR_PLANE;
 		}
-		
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		GL11.glDisable(GL11.GL_BLEND);
 		GL11.glPushMatrix();
@@ -90,6 +104,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glCallList(this.backgroundDisplayList);
 		GL11.glPopMatrix();
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		LightHelper.enableLight(world, partialTicks);
 		
 		// Terrain
 		GL11.glPushMatrix();
@@ -102,8 +117,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			compileVolumetricDisplayList(world);
 			terrain3DShapeRenderWorker.ready = false;
 		}
-		GL11.glCallList(this.terrainSurfaceDisplayList);
-//		GL11.glCallList(this.terrainVolumetricDisplayList);
+//		GL11.glCallList(this.terrainSurfaceDisplayList);
+		GL11.glCallList(this.terrainVolumetricDisplayList);
 		GL11.glPopMatrix();
 
 		// Sea
@@ -113,8 +128,9 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		GL11.glCallList(this.seaDisplayList);
 		GL11.glDisable(GL11.GL_BLEND);
+		GL11.glEnable(GL11.GL_FOG);
 		GL11.glPopMatrix();
-
+		LightHelper.disableLight();
 		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 	}
 

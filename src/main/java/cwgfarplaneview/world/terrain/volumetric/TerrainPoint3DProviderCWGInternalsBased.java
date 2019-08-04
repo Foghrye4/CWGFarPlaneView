@@ -47,8 +47,9 @@ public class TerrainPoint3DProviderCWGInternalsBased implements TerrainPoint3DPr
 
 		if (settings.cubeAreas != null) {
 			for (CustomGeneratorSettings.IntAABB aabb : settings.cubeAreas.keySet()) {
+				CustomGeneratorSettings subSettings = settings.cubeAreas.get(aabb);
 				this.areaGenerators.put(aabb, new TerrainPoint3DProviderCWGInternalsBased(world,
-						CustomCubicWorldType.makeBiomeProvider(world, settings), settings.cubeAreas.get(aabb), seed));
+						CustomCubicWorldType.makeBiomeProvider(world, subSettings), subSettings, seed));
 			}
 		}
 	}
