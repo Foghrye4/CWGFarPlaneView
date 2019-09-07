@@ -94,7 +94,7 @@ public class TerrainPoint3DProviderCWGInternalsBased implements TerrainPoint3DPr
 		int cubeY = meshY << AddressUtil.MESH_SIZE_BIT_CHUNKS;
 		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
 			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
-				return getTerrainPointAt(meshX, meshY, meshZ);
+				return entry.getValue().getTerrainPointAt(meshX, meshY, meshZ);
 			}
 		}
 		return getPointOf(terrainBuilder, meshX, meshY, meshZ);

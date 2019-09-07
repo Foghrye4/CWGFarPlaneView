@@ -16,6 +16,8 @@ public class TerrainPoint3D implements XYZAddressable {
 	public byte localX;
 	public byte localY;
 	public byte localZ;
+	public byte blockLight = 0;
+	public byte skyLight = -1;
 	public IBlockState blockState;
 	public Biome biome;
 

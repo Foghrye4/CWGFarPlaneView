@@ -145,98 +145,12 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 		int bz = point.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int height = point.blockY;
 		BlockPos pos = new BlockPos(bx, height, bz);
-		int color = this.getBlockColor(point.blockState, point.biome, pos);
+		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
+		int color = cp.blockColors.getBlockColor(point.blockState, point.biome, pos, n1.getY());
 		float red = (color >> 16 & 255) / 256f;
 		float green = (color >> 8 & 255) / 256f;
 		float blue = (color & 255) / 256f;
 		worldRendererIn.pos(bx, height, bz).tex(u, v).lightmap(240, 0).color(red, green, blue, 1.0f).normal(n1.getX(), n1.getY(), n1.getZ()).endVertex();
-	}
-
-	private int getBlockColor(IBlockState state, Biome biome, BlockPos pos) {
-		Block block = state.getBlock();
-		if (biome.isSnowyBiome() || biome.getTemperature(pos) < 0.15f)
-			return 0xf0fbfb;
-		if (block == Blocks.GRASS)
-			return multiplyColors(0x979797, biome.getGrassColorAtPos(pos));
-		if (block == Blocks.STONE)
-			return 0x7d7d7d;
-		if (block == Blocks.CLAY)
-			return 0x9fa4b1;
-		if (block == Blocks.DIRT)
-			return 0x866043;
-		if (block == Blocks.HARDENED_CLAY) {
-			return 0x975d43;
-		}
-		if (block == Blocks.STAINED_HARDENED_CLAY) {
-			switch (state.getValue(BlockStainedHardenedClay.COLOR)) {
-			case BLACK:
-				return 0x251710;
-			case BLUE:
-				return 0x4a3c5b;
-			case BROWN:
-				return 0x4d3324;
-			case CYAN:
-				return 0x575b5b;
-			case GRAY:
-				return 0x3a2a24;
-			case GREEN:
-				return 0x4c532a;
-			case LIGHT_BLUE:
-				return 0x716c8a;
-			case LIME:
-				return 0x677535;
-			case MAGENTA:
-				return 0x96586d;
-			case ORANGE:
-				return 0xa25426;
-			case PINK:
-				return 0xa24e4f;
-			case PURPLE:
-				return 0x764656;
-			case RED:
-				return 0x8f3d2f;
-			case SILVER:
-				return 0x876b61;
-			case WHITE:
-				return 0xd2b2a1;
-			case YELLOW:
-				return 0xba8523;
-			default:
-				return 0x975d43;
-			}
-		}
-		if (block == Blocks.ICE)
-			return 0x7dadff;
-		if (block == Blocks.FROSTED_ICE)
-			return 0x7dadff;
-		if (block == Blocks.PACKED_ICE)
-			return 0xa5c3f5;
-		if (block == Blocks.OBSIDIAN)
-			return 0x14121e;
-		if (block == Blocks.SAND) {
-			if (state.getValue(BlockSand.VARIANT) == BlockSand.EnumType.RED_SAND)
-				return 0xa95821;
-			return 0xdbd3a0;
-		}
-		if (block == Blocks.SNOW)
-			return 0xf0fbfb;
-		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
-		if(!cp.blockColors.map.containsKey(state))
-			logger.warn("Unknow blockstate recieved:" + state);
-		return cp.blockColors.map.getInt(state);
-	}
-
-	private int multiplyColors(int color1, int color2) {
-		int red1 = color1 >>> 16;
-		int green1 = color1 >>> 8 & 0xFF;
-		int blue1 = color1 & 0xFF;
-		int red2 = color2 >>> 16;
-		int green2 = color2 >>> 8 & 0xFF;
-		int blue2 = color2 & 0xFF;
-		int red = red1 * red2 / 255;
-		int green = green1 * green2 / 255;
-		int blue = blue1 * blue2 / 255;
-		return red << 16 | green << 8 | blue;
 	}
 
 	public void schleduleAddToMap(TerrainPoint[] tps) {
@@ -247,17 +161,17 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 	}
 	
 	public void addToMap(TerrainPoint[] tps) {
-			for (TerrainPoint tp : tps) {
-				terrainMap.put(tp);
-				if (tp.getX() < this.minimalXMesh)
-					this.minimalXMesh = tp.getX();
-				if (tp.getZ() < this.minimalZMesh)
-					this.minimalZMesh = tp.getZ();
-				if (tp.getX() > this.maximalXMesh)
-					this.maximalXMesh = tp.getX();
-				if (tp.getZ() > this.maximalZMesh)
-					this.maximalZMesh = tp.getZ();
-			}
+		for (TerrainPoint tp : tps) {
+			terrainMap.put(tp);
+			if (tp.getX() < this.minimalXMesh)
+				this.minimalXMesh = tp.getX();
+			if (tp.getZ() < this.minimalZMesh)
+				this.minimalZMesh = tp.getZ();
+			if (tp.getX() > this.maximalXMesh)
+				this.maximalXMesh = tp.getX();
+			if (tp.getZ() > this.maximalZMesh)
+				this.maximalZMesh = tp.getZ();
+		}
 	}
 
 	public void clear() {

@@ -1,7 +1,7 @@
 package cwgfarplaneview;
 
-import cwgfarplaneview.client.BlockColors;
 import cwgfarplaneview.client.ClientTerrainRenderer;
+import cwgfarplaneview.client.block_color.BlockColorsCache;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class ClientProxy extends ServerProxy {
 	public final ClientTerrainRenderer terrainRenderer = new ClientTerrainRenderer();
-	public final BlockColors blockColors = new BlockColors();
+	public final BlockColorsCache blockColors = new BlockColorsCache();
 	
 	@Override
 	public void preInit() {
@@ -26,7 +26,7 @@ public class ClientProxy extends ServerProxy {
 	}
 	
 	public void postInit() {
-		blockColors.loadColors();
+		blockColors.loadBlockTextureMapToRAM();
 		terrainRenderer.init();
 	}
 }
