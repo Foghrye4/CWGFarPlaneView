@@ -1,6 +1,6 @@
 package cwgfarplaneview.util;
 
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
+import static cwgfarplaneview.util.TerrainConfig.meshSizeBitBlocks;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.flat.TerrainPoint;
@@ -33,14 +33,14 @@ public class TerrainUtil {
 	}
 
 	public static Vec3f calculateNormal(TerrainPoint tp1, TerrainPoint tp2, TerrainPoint tp3) {
-		int bx1 = tp1.chunkX << MESH_SIZE_BIT_BLOCKS;
-		int bz1 = tp1.chunkZ << MESH_SIZE_BIT_BLOCKS;
+		int bx1 = tp1.chunkX << meshSizeBitBlocks;
+		int bz1 = tp1.chunkZ << meshSizeBitBlocks;
 		int by1 = tp1.blockY;
-		int bx2 = tp2.chunkX << MESH_SIZE_BIT_BLOCKS;
-		int bz2 = tp2.chunkZ << MESH_SIZE_BIT_BLOCKS;
+		int bx2 = tp2.chunkX << meshSizeBitBlocks;
+		int bz2 = tp2.chunkZ << meshSizeBitBlocks;
 		int by2 = tp2.blockY;
-		int bx3 = tp3.chunkX << MESH_SIZE_BIT_BLOCKS;
-		int bz3 = tp3.chunkZ << MESH_SIZE_BIT_BLOCKS;
+		int bx3 = tp3.chunkX << meshSizeBitBlocks;
+		int bz3 = tp3.chunkZ << meshSizeBitBlocks;
 		int by3 = tp3.blockY;
 		int v1x = bx1 - bx2;
 		int v1y = by1 - by2;

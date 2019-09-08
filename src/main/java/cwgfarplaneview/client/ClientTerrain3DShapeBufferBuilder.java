@@ -1,17 +1,12 @@
 package cwgfarplaneview.client;
 
-import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
-import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CELLS;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
-import static java.lang.Math.*;
+import static cwgfarplaneview.util.TerrainConfig.*;
+import static cwgfarplaneview.util.TerrainConfig.meshSizeBitChunks;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.lwjgl.opengl.GL11;
 
-import cwgfarplaneview.CWGFarPlaneViewMod;
-import cwgfarplaneview.ClientProxy;
-import cwgfarplaneview.util.TerrainUtil;
-import cwgfarplaneview.util.Vec3f;
 import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
 import net.minecraft.client.Minecraft;
@@ -21,20 +16,20 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 
-	private final BufferBuilder buffer = new BufferBuilder(2097152);
-	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
-	private final XYZMap<TerrainPoint3D> terrainMap = new XYZMap<TerrainPoint3D>(0.8f, 8000);
-	private final ConcurrentLinkedQueue<TerrainPoint3D[]> pendingTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D[]>();
 	private static final VertexFormat VERTEX_FORMAT = (new VertexFormat()).addElement(DefaultVertexFormats.POSITION_3F)
 			.addElement(DefaultVertexFormats.TEX_2F).addElement(DefaultVertexFormats.TEX_2S)
 			.addElement(DefaultVertexFormats.COLOR_4UB).addElement(DefaultVertexFormats.NORMAL_3B)
 			.addElement(DefaultVertexFormats.PADDING_1B);
+	
+	private final BufferBuilder buffer = new BufferBuilder(2097152);
+	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
+	private final XYZMap<TerrainPoint3D> terrainMap = new XYZMap<TerrainPoint3D>(0.8f, 8000);
+	private final ConcurrentLinkedQueue<TerrainPoint3D[]> pendingTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D[]>();
+	private final TerrainPoint3D[][][] terrainPointsCache = new TerrainPoint3D[4][4][4];
+	private final MutableWeightedNormal[][][] normalsCache = new MutableWeightedNormal[4][4][4];
 
 	int minimalXMesh = -4;
 	int minimalYMesh = -4;
@@ -47,17 +42,64 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	volatile public boolean run = true;
 
 	Object lock = new Object();
+	
+	public ClientTerrain3DShapeBufferBuilder() {
+		for (int ix = 0; ix < 4; ix++)
+			for (int iy = 0; iy < 4; iy++)
+				for (int iz = 0; iz < 4; iz++)
+					normalsCache[ix][iy][iz] = new MutableWeightedNormal();
+	}
 
 	private void addTriangles(BufferBuilder worldRendererIn, int x, int y, int z) {
-		TerrainPoint3D tp000 = terrainMap.get(x, y, z);
-		TerrainPoint3D tp100 = terrainMap.get(x + 1, y, z);
-		TerrainPoint3D tp010 = terrainMap.get(x, y + 1, z);
-		TerrainPoint3D tp001 = terrainMap.get(x, y, z + 1);
-		TerrainPoint3D tp110 = terrainMap.get(x + 1, y + 1, z);
-		TerrainPoint3D tp101 = terrainMap.get(x + 1, y, z + 1);
-		TerrainPoint3D tp011 = terrainMap.get(x, y + 1, z + 1);
-		TerrainPoint3D tp111 = terrainMap.get(x + 1, y + 1, z + 1);
-		CubeRenderer.renderCube(worldRendererIn, tp000, tp100, tp010, tp001, tp110, tp101, tp011, tp111);
+		for (int ix = 0; ix < 4; ix++)
+			for (int iy = 0; iy < 4; iy++)
+				for (int iz = 0; iz < 4; iz++) {
+					terrainPointsCache[ix][iy][iz] = terrainMap.get(x-1+ix, y-1+iy, z-1+iz);
+					normalsCache[ix][iy][iz].reset();
+				}
+		for (int ix = 0; ix < 3; ix++)
+			for (int iy = 0; iy < 3; iy++)
+				for (int iz = 0; iz < 3; iz++) {
+					CubeRenderer.renderCube(worldRendererIn, 
+							terrainPointsCache[ix][iy][iz], 
+							terrainPointsCache[ix+1][iy][iz], 
+							terrainPointsCache[ix][iy+1][iz], 
+							terrainPointsCache[ix][iy][iz+1],
+							terrainPointsCache[ix+1][iy+1][iz],
+							terrainPointsCache[ix+1][iy][iz+1],
+							terrainPointsCache[ix][iy+1][iz+1],
+							terrainPointsCache[ix+1][iy+1][iz+1], 
+							normalsCache[ix][iy][iz], 
+							normalsCache[ix+1][iy][iz], 
+							normalsCache[ix][iy+1][iz], 
+							normalsCache[ix][iy][iz+1],
+							normalsCache[ix+1][iy+1][iz],
+							normalsCache[ix+1][iy][iz+1],
+							normalsCache[ix][iy+1][iz+1],
+							normalsCache[ix+1][iy+1][iz+1],
+									true);
+				}
+		int ix = 1;
+		int iy = 1;
+		int iz = 1;
+		CubeRenderer.renderCube(worldRendererIn, 
+				terrainPointsCache[ix][iy][iz], 
+				terrainPointsCache[ix+1][iy][iz], 
+				terrainPointsCache[ix][iy+1][iz], 
+				terrainPointsCache[ix][iy][iz+1],
+				terrainPointsCache[ix+1][iy+1][iz],
+				terrainPointsCache[ix+1][iy][iz+1],
+				terrainPointsCache[ix][iy+1][iz+1],
+				terrainPointsCache[ix+1][iy+1][iz+1], 
+				normalsCache[ix][iy][iz], 
+				normalsCache[ix+1][iy][iz], 
+				normalsCache[ix][iy+1][iz], 
+				normalsCache[ix][iy][iz+1],
+				normalsCache[ix+1][iy+1][iz],
+				normalsCache[ix+1][iy][iz+1],
+				normalsCache[ix][iy+1][iz+1],
+				normalsCache[ix+1][iy+1][iz+1],
+						false);
 	}
 	
 	@Override
@@ -80,15 +122,15 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 			int z1 = maximalZMesh;
 			EntityPlayerSP player = Minecraft.getMinecraft().player;
 			if (player != null) {
-				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
-				int pmccy = player.chunkCoordY >> MESH_SIZE_BIT_CHUNKS;
-				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
-				x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
-				x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
-				y0 = Math.max(y0, pmccy - MAX_UPDATE_DISTANCE_CELLS);
-				y1 = Math.min(y1, pmccy + MAX_UPDATE_DISTANCE_CELLS);
-				z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
-				z1 = Math.min(z1, pmccz + MAX_UPDATE_DISTANCE_CELLS);
+				int pmccx = player.chunkCoordX >> meshSizeBitChunks;
+				int pmccy = player.chunkCoordY >> meshSizeBitChunks;
+				int pmccz = player.chunkCoordZ >> meshSizeBitChunks;
+				x0 = Math.max(x0, pmccx - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+				x1 = Math.min(x1, pmccx + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+				y0 = Math.max(y0, pmccy - VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
+				y1 = Math.min(y1, pmccy + VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
+				z0 = Math.max(z0, pmccz - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+				z1 = Math.min(z1, pmccz + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
 			}
 			a: for (int x = x0; x <= x1; x++) {
 				for (int y = y0; y <= y1; y++) {

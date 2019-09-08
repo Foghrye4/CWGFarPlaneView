@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
-import cwgfarplaneview.util.AddressUtil;
+import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
@@ -106,8 +106,8 @@ public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvid
 	 
 	@Override
 	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << AddressUtil.MESH_SIZE_BIT_CHUNKS;
+		int cubeX = meshX << TerrainConfig.meshSizeBitChunks;
+		int cubeZ = meshZ << TerrainConfig.meshSizeBitChunks;
 		while (!noiseConsumer.surfaceDetected) {
 			int cubeY = cubeHeightHint;
 			BlockPos start = new BlockPos(cubeX * 16, cubeY * 2, cubeZ * 16);

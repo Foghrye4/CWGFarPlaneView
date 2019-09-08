@@ -1,6 +1,6 @@
 package cwgfarplaneview.world.terrain.flat;
 
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.TerrainConfig.meshSizeBitChunks;
 import static cwgfarplaneview.util.TerrainUtil.*;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
@@ -28,8 +28,8 @@ public class TerrainPointProviderGeneratorBased implements TerrainPointProvider 
 	
 	private TerrainPoint getTerrainPointAt(int meshX, int meshZ, int heightHint) throws IncorrectTerrainDataException {
 		int cubeY = heightHint >> 4;
-		int cubeX = meshX << MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << MESH_SIZE_BIT_CHUNKS;
+		int cubeX = meshX << meshSizeBitChunks;
+		int cubeZ = meshZ << meshSizeBitChunks;
 		CubePrimer primer = generator.generateCube(cubeX, cubeY, cubeZ);
 		while (isAirOrWater(primer.getBlockState(0, 0, 0))) {
 			primer = generator.generateCube(cubeX, --cubeY, cubeZ);

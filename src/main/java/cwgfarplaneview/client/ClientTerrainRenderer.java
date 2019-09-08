@@ -2,8 +2,8 @@ package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
-import static cwgfarplaneview.util.AddressUtil.CLOSE_PLANE;
-import static cwgfarplaneview.util.AddressUtil.FAR_PLANE;
+import static cwgfarplaneview.util.TerrainConfig.closePlane;
+import static cwgfarplaneview.util.TerrainConfig.*;
 
 import java.nio.FloatBuffer;
 
@@ -11,6 +11,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
+import cwgfarplaneview.util.TerrainConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -46,7 +47,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 
 	private float fov = 70.0f;
 	private int seaLevel = 64;
-	private float prevFarPlane = FAR_PLANE;
+	private float prevFarPlane = getFarClippingRange();
 	private int terrainSurfaceDisplayList = -1;
 	private int terrainVolumetricDisplayList = -1;
 	private int seaDisplayList = -1;
@@ -71,7 +72,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		world.provider.setSkyRenderer(this);
 		GlStateManager.matrixMode(5889);
 		GlStateManager.loadIdentity();
-		Project.gluPerspective(fov, (float) mc.displayWidth / (float) mc.displayHeight, CLOSE_PLANE, FAR_PLANE);
+		Project.gluPerspective(fov, (float) mc.displayWidth / (float) mc.displayHeight, closePlane, getFarClippingRange());
 		GlStateManager.matrixMode(5888);
 		EntityPlayerSP player = mc.player;
 		float renderPosX = (float) (player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks);
@@ -92,10 +93,10 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		}
 
 		
-		if (prevFarPlane != FAR_PLANE) {
+		if (prevFarPlane != getFarClippingRange()) {
 			this.compileSeaDisplayList();
 			this.compileBackgroundDisplayList();
-			prevFarPlane = FAR_PLANE;
+			prevFarPlane = getFarClippingRange();
 		}
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		GL11.glDisable(GL11.GL_BLEND);
@@ -117,13 +118,16 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			compileVolumetricDisplayList(world);
 			terrain3DShapeRenderWorker.ready = false;
 		}
-//		GL11.glCallList(this.terrainSurfaceDisplayList);
-		GL11.glCallList(this.terrainVolumetricDisplayList);
+		if (FLAT.maxUpdateDistanceCells > 0)
+			GL11.glCallList(this.terrainSurfaceDisplayList);
+		GL11.glTranslatef(0.0f, 0.2f, 0.0f);
+		if (VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells > 0 && VOLUMETRIC_VERTICAL.maxUpdateDistanceCells > 0)
+			GL11.glCallList(this.terrainVolumetricDisplayList);
 		GL11.glPopMatrix();
 
 		// Sea
 		GL11.glPushMatrix();
-		GL11.glTranslatef(0.0f, -renderPosY, 0.0f);
+		GL11.glTranslatef(0.0f, -renderPosY-0.2f, 0.0f);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		GL11.glCallList(this.seaDisplayList);
@@ -131,6 +135,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glEnable(GL11.GL_FOG);
 		GL11.glPopMatrix();
 		LightHelper.disableLight();
+		if(CubeRenderer.DEBUG_MODE)
+			GL11.glClearDepth(0.8);
 		GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 	}
 
@@ -139,26 +145,27 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
+		float farPlane = getFarClippingRange();
 		
-		this.addSeaVertex(FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
-		this.addSeaVertex(FAR_PLANE * 2,  0.0f, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(farPlane * 2,  farPlane * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(farPlane * 2,  0.0f, 1.0f, 0.0f, 1.0f);
 		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
-		this.addSeaVertex(0.0f,  FAR_PLANE * 2, 0.0f, 1.0f, 1.0f);
+		this.addSeaVertex(0.0f,  farPlane * 2, 0.0f, 1.0f, 1.0f);
 		
-		this.addSeaVertex(FAR_PLANE * 2,  -FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
-		this.addSeaVertex(0.0f,  -FAR_PLANE * 2, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(farPlane * 2,  -farPlane * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  -farPlane * 2, 1.0f, 0.0f, 1.0f);
 		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
-		this.addSeaVertex(FAR_PLANE * 2,  0.0f, 0.0f, 1.0f, 1.0f);
+		this.addSeaVertex(farPlane * 2,  0.0f, 0.0f, 1.0f, 1.0f);
 		
-		this.addSeaVertex(-FAR_PLANE * 2,  -FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
-		this.addSeaVertex(-FAR_PLANE * 2,  0.0f, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(-farPlane * 2,  -farPlane * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(-farPlane * 2,  0.0f, 1.0f, 0.0f, 1.0f);
 		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
-		this.addSeaVertex(0.0f,  -FAR_PLANE * 2, 0.0f, 1.0f, 1.0f);
+		this.addSeaVertex(0.0f,  -farPlane * 2, 0.0f, 1.0f, 1.0f);
 
-		this.addSeaVertex(-FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f, 1.0f);
-		this.addSeaVertex(0.0f,  FAR_PLANE * 2, 1.0f, 0.0f, 1.0f);
+		this.addSeaVertex(-farPlane * 2,  farPlane * 2, 0.0f, 0.0f, 1.0f);
+		this.addSeaVertex(0.0f,  farPlane * 2, 1.0f, 0.0f, 1.0f);
 		this.addSeaVertex(0.0f,  0.0f, 1.0f, 1.0f, 0.8f);
-		this.addSeaVertex(-FAR_PLANE * 2,  0.0f, 0.0f, 1.0f, 1.0f);
+		this.addSeaVertex(-farPlane * 2,  0.0f, 0.0f, 1.0f, 1.0f);
 		
 		tessellator.draw();
 		GL11.glEndList();
@@ -169,11 +176,12 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder worldRendererIn = tessellator.getBuffer();
 		worldRendererIn.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_LMAP_COLOR);
+		float farPlane = getFarClippingRange();
 		
-		this.addBackgroundVertex(FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 0.0f);
-		this.addBackgroundVertex(FAR_PLANE * 2,  -FAR_PLANE * 2, 1.0f, 0.0f);
-		this.addBackgroundVertex(-FAR_PLANE * 2,  -FAR_PLANE * 2, 1.0f, 1.0f);
-		this.addBackgroundVertex(-FAR_PLANE * 2,  FAR_PLANE * 2, 0.0f, 1.0f);
+		this.addBackgroundVertex(farPlane * 2,  farPlane * 2, 0.0f, 0.0f);
+		this.addBackgroundVertex(farPlane * 2,  -farPlane * 2, 1.0f, 0.0f);
+		this.addBackgroundVertex(-farPlane * 2,  -farPlane * 2, 1.0f, 1.0f);
+		this.addBackgroundVertex(-farPlane * 2,  farPlane * 2, 0.0f, 1.0f);
 		
 		tessellator.draw();
 		GL11.glEndList();

@@ -30,11 +30,11 @@ public class CWGFarPlaneViewEventHandler {
 			return;
 		EntityPlayerMP player = (EntityPlayerMP) event.getEntity();
 		network.sendSeaLevel(player, event.getWorld().getSeaLevel());
-/*		TerrainSurfaceBuilderWorker worker = new TerrainSurfaceBuilderWorker(player, (WorldServer) world);
+		TerrainSurfaceBuilderWorker worker = new TerrainSurfaceBuilderWorker(player, (WorldServer) world);
 		workers.add(worker);
 		Thread thread = new Thread(worker, player.getName() + "'s terrain surface builder worker");
 		thread.setPriority(Thread.MIN_PRIORITY);
-		thread.start();*/
+		thread.start();
 		TerrainVolumeBuilderWorker volumetricWorker = new TerrainVolumeBuilderWorker(player, (WorldServer) world);
 		volumeWorkers.add(volumetricWorker);
 		Thread thread2 = new Thread(volumetricWorker, player.getName() + "'s terrain volumetric builder worker");

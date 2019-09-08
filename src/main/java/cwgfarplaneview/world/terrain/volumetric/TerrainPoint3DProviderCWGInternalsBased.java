@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
-import cwgfarplaneview.util.AddressUtil;
+import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
@@ -15,15 +15,15 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGenerato
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.IBuilder;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.NoiseSource;
-import net.minecraft.init.Biomes;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
-public class TerrainPoint3DProviderCWGInternalsBased implements TerrainPoint3DProvider {
+public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvider {
 	private static final int CACHE_SIZE_2D = 16 * 16;
 	private static final int CACHE_SIZE_3D = 16 * 16 * 16;
 	private static final ToIntFunction<Vec3i> HASH_2D = (v) -> v.getX() + v.getZ() * 5;
@@ -34,13 +34,15 @@ public class TerrainPoint3DProviderCWGInternalsBased implements TerrainPoint3DPr
 	private final CustomGeneratorSettings conf;
 	private final BiomeSource biomeSource;
 	private final Cell3DNoiseConsumer noiseConsumer;
-	private final World world;
+	private final BlockPos.MutableBlockPos start = new BlockPos.MutableBlockPos();
+	private final BlockPos.MutableBlockPos end = new BlockPos.MutableBlockPos();
 	private final static Vec3i SCALE = new Vec3i(1, 1, 1);
 
-	public TerrainPoint3DProviderCWGInternalsBased(World worldIn, BiomeProvider biomeProvider,
+
+	public TerrainPoint3DProviderCWGInternalsBased(WorldServer worldIn, BiomeProvider biomeProvider,
 			CustomGeneratorSettings settings, final long seed) {
+		super(worldIn);
 		this.conf = settings;
-		this.world = worldIn;
 		this.biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), biomeProvider, 2);
 		this.noiseConsumer = new Cell3DNoiseConsumer(biomeSource);
 		initGenerator(seed);
@@ -89,74 +91,29 @@ public class TerrainPoint3DProviderCWGInternalsBased implements TerrainPoint3DPr
 
 	@Override
 	public TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeY = meshY << AddressUtil.MESH_SIZE_BIT_CHUNKS;
+		int cubeX = meshX << TerrainConfig.meshSizeBitChunks;
+		int cubeZ = meshZ << TerrainConfig.meshSizeBitChunks;
+		int cubeY = meshY << TerrainConfig.meshSizeBitChunks;
 		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
 			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
 				return entry.getValue().getTerrainPointAt(meshX, meshY, meshZ);
 			}
 		}
-		return getPointOf(terrainBuilder, meshX, meshY, meshZ);
+		return getPointOf(meshX, meshY, meshZ);
 	}
 
-	private TerrainPoint3D getPointOf(IBuilder terrainBuilder, int meshX, int meshY, int meshZ)
-			throws IncorrectTerrainDataException {
-		int cubeX = meshX << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		int cubeY = meshY << AddressUtil.MESH_SIZE_BIT_CHUNKS;
-		BlockPos.MutableBlockPos start = new BlockPos.MutableBlockPos(cubeX * 16, cubeY * 16, cubeZ * 16);
-		BlockPos.MutableBlockPos end = new BlockPos.MutableBlockPos(cubeX * 16 + 1, cubeY * 16 + 1, cubeZ * 16 + 1);
-		int rangeOfSearch = 16;
+	
+	@Override
+	protected void reset(int cubeX, int cubeY, int cubeZ) {
+		end.setPos(cubeX * 16 + 7, cubeY * 16 + 7, cubeZ * 16 + 7);
 		noiseConsumer.resetBiomeReplacers(end);
-		terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
-		if (TerrainUtil.isAirOrWater(noiseConsumer.blockState))
-			return new TerrainPoint3D(meshX, meshY, meshZ, (byte) 0, (byte) 0, (byte) 0, noiseConsumer.blockState,
-					Biomes.PLAINS);
-		for (EnumFacing face : EnumFacing.values()) {
-			start.setPos(cubeX * 16 + face.getFrontOffsetX() * rangeOfSearch,
-					cubeY * 16 + face.getFrontOffsetY() * rangeOfSearch,
-					cubeZ * 16 + face.getFrontOffsetZ() * rangeOfSearch);
-			end.setPos(start.getX() + 1, start.getY() + 1, start.getZ() + 1);
-			terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
-			if (TerrainUtil.isAirOrWater(noiseConsumer.blockState)) {
-				do {
-					rangeOfSearch /= 2;
-					start.setPos(cubeX * 16 + face.getFrontOffsetX() * rangeOfSearch,
-							cubeY * 16 + face.getFrontOffsetY() * rangeOfSearch,
-							cubeZ * 16 + face.getFrontOffsetZ() * rangeOfSearch);
-					end.setPos(start.getX() + 1, start.getY() + 1, start.getZ() + 1);
-					terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
-				} while (TerrainUtil.isAirOrWater(noiseConsumer.blockState));
-				rangeOfSearch *= 2;
-				rangeOfSearch--;
-				start.setPos(cubeX * 16 + face.getFrontOffsetX() * rangeOfSearch,
-						cubeY * 16 + face.getFrontOffsetY() * rangeOfSearch,
-						cubeZ * 16 + face.getFrontOffsetZ() * rangeOfSearch);
-				end.setPos(start.getX() + 1, start.getY() + 1, start.getZ() + 1);
-				terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
-				while (TerrainUtil.isAirOrWater(noiseConsumer.blockState)) {
-					rangeOfSearch--;
-					start.setPos(cubeX * 16 + face.getFrontOffsetX() * rangeOfSearch,
-							cubeY * 16 + face.getFrontOffsetY() * rangeOfSearch,
-							cubeZ * 16 + face.getFrontOffsetZ() * rangeOfSearch);
-					end.setPos(start.getX() + 1, start.getY() + 1, start.getZ() + 1);
-					terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
-				}
-				byte localX = (byte) (start.getX() - cubeX * 16);
-				byte localY = (byte) (start.getY() - cubeY * 16);
-				byte localZ = (byte) (start.getZ() - cubeZ * 16);
-				return new TerrainPoint3D(meshX, meshY, meshZ, localX, localY, localZ, noiseConsumer.blockState,
-						getBiomeAt(cubeX, cubeZ));
-			}
-		}
-		return new TerrainPoint3D(meshX, meshY, meshZ, (byte) 0, (byte) 0, (byte) 0, noiseConsumer.blockState,
-				getBiomeAt(cubeX, cubeZ));
 	}
-
-	private Biome getBiomeAt(int x, int z) {
-		Biome[] biomes = new Biome[256];
-		world.getBiomeProvider().getBiomes(biomes, x << 4, z << 4, 16, 16, false);
-		return biomes[0];
+	
+	@Override
+	protected IBlockState getBlockStateAt(int x,int y, int z) {
+		start.setPos(x, y, z);
+		end.setPos(x+1, y+1, z+1);
+		terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
+		return noiseConsumer.blockState;
 	}
 }

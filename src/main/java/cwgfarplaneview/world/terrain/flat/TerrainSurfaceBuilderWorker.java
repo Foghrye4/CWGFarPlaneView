@@ -2,7 +2,7 @@ package cwgfarplaneview.world.terrain.flat;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.CWGFarPlaneViewMod.network;
-import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CHUNKS;
+import static cwgfarplaneview.util.TerrainConfig.FLAT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -143,7 +143,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 			minXZ = px - minimalZ;
 			closestSide = EnumFacing.NORTH;
 		}
-		if (minXZ > MAX_UPDATE_DISTANCE_CHUNKS)
+		if (minXZ > FLAT.maxUpdateDistanceChunks)
 			return EnumFacing.UP;
 		return closestSide;
 	}

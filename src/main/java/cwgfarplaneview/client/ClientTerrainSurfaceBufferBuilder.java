@@ -1,9 +1,11 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
-import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CELLS;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_BLOCKS;
-import static cwgfarplaneview.util.AddressUtil.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.TerrainConfig.FLAT;
+import static cwgfarplaneview.util.TerrainConfig.meshSizeBitBlocks;
+import static cwgfarplaneview.util.TerrainConfig.meshSizeBitChunks;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.lwjgl.opengl.GL11;
 
@@ -13,10 +15,6 @@ import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.util.Vec3f;
 import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import io.github.opencubicchunks.cubicchunks.api.util.XZMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockSand;
-import net.minecraft.block.BlockStainedHardenedClay;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -24,10 +22,7 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.Biome;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 
@@ -97,12 +92,12 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 			int z1 = maximalZMesh;
 			EntityPlayerSP player = Minecraft.getMinecraft().player;
 			if (player != null) {
-				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
-				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
-				x0 = Math.max(x0, pmccx - MAX_UPDATE_DISTANCE_CELLS);
-				x1 = Math.min(x1, pmccx + MAX_UPDATE_DISTANCE_CELLS);
-				z0 = Math.max(z0, pmccz - MAX_UPDATE_DISTANCE_CELLS);
-				z1 = Math.min(z1, pmccz + MAX_UPDATE_DISTANCE_CELLS);
+				int pmccx = player.chunkCoordX >> meshSizeBitChunks;
+				int pmccz = player.chunkCoordZ >> meshSizeBitChunks;
+				x0 = Math.max(x0, pmccx - FLAT.maxUpdateDistanceCells);
+				x1 = Math.min(x1, pmccx + FLAT.maxUpdateDistanceCells);
+				z0 = Math.max(z0, pmccz - FLAT.maxUpdateDistanceCells);
+				z1 = Math.min(z1, pmccz + FLAT.maxUpdateDistanceCells);
 			}
 			a: for (int x = x0; x <= x1; x++) {
 				for (int z = z0; z <= z1; z++) {
@@ -141,8 +136,8 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 	}
 
 	private void addVector(BufferBuilder worldRendererIn, TerrainPoint point, Vec3f n1, float u, float v) {
-		int bx = point.chunkX << MESH_SIZE_BIT_BLOCKS;
-		int bz = point.chunkZ << MESH_SIZE_BIT_BLOCKS;
+		int bx = point.chunkX << meshSizeBitBlocks;
+		int bz = point.chunkZ << meshSizeBitBlocks;
 		int height = point.blockY;
 		BlockPos pos = new BlockPos(bx, height, bz);
 		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;

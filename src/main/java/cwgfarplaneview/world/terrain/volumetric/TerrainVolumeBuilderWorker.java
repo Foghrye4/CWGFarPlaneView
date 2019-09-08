@@ -2,7 +2,8 @@ package cwgfarplaneview.world.terrain.volumetric;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.CWGFarPlaneViewMod.network;
-import static cwgfarplaneview.util.AddressUtil.MAX_UPDATE_DISTANCE_CHUNKS;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_HORIZONTAL;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_VERTICAL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -130,10 +131,10 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			throws IncorrectTerrainDataException {
 		boolean newlyGenerated = false;
 		TerrainPoint3D point = data.get(x, y, z);
-/*		if (point == null) {
+		if (point == null) {
 			newlyGenerated = true;
 			point = this.diskTPProvider.getTerrainPointAt(x, y, z);
-		}*/
+		}
 		if (point == null) {
 			newlyGenerated = true;
 			point = this.generatorTPProvider.getTerrainPointAt(x, y, z);
@@ -145,32 +146,30 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	private EnumFacing getSideClosestToPlayer(int px, int py, int pz) {
 		int minXYZ = Integer.MAX_VALUE;
 		EnumFacing closestSide = null;
-		if (maximalX - px < minXYZ) {
+		if (maximalX - px < minXYZ && maximalX - px < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
 			minXYZ = maximalX - px;
 			closestSide = EnumFacing.EAST;
 		}
-		if (maximalY - py < minXYZ) {
+		if (maximalY - py < minXYZ && maximalY - py < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
 			minXYZ = maximalY - py;
 			closestSide = EnumFacing.UP;
 		}
-		if (maximalZ - pz < minXYZ) {
+		if (maximalZ - pz < minXYZ && maximalZ - pz < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
 			minXYZ = maximalZ - pz;
 			closestSide = EnumFacing.SOUTH;
 		}
-		if (px - minimalX < minXYZ) {
+		if (px - minimalX < minXYZ && px - minimalX < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
 			minXYZ = px - minimalX;
 			closestSide = EnumFacing.WEST;
 		}
-		if (py - minimalY < minXYZ) {
+		if (py - minimalY < minXYZ && py - minimalY < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
 			minXYZ = py - minimalY;
 			closestSide = EnumFacing.DOWN;
 		}
-		if (pz - minimalZ < minXYZ) {
+		if (pz - minimalZ < minXYZ && pz - minimalZ < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
 			minXYZ = px - minimalZ;
 			closestSide = EnumFacing.NORTH;
 		}
-		if (minXYZ > MAX_UPDATE_DISTANCE_CHUNKS)
-			return null;
 		return closestSide;
 	}
 
