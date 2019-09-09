@@ -38,9 +38,9 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 
 	@Override
 	public TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << TerrainConfig.meshSizeBitChunks;
-		int cubeZ = meshZ << TerrainConfig.meshSizeBitChunks;
-		int cubeY = meshY << TerrainConfig.meshSizeBitChunks;
+		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cubeY = meshY << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		EntryLocation3D ebsKey = new EntryLocation3D(cubeX, cubeY, cubeZ);
 		Optional<ByteBuffer> buf;
 		try {
@@ -57,8 +57,7 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 		}
 		TerrainPoint3D tp = getPointOf(meshX, meshY, meshZ);
 		tp.blockLight = (byte) cachedStorage.getBlockLight(tp.localX, tp.localY, tp.localZ);
-   		tp.skyLight = (byte) cachedStorage.getSkyLight(tp.localX, tp.localY, tp.localZ);
-       	tp.skyLight = 0;
+		tp.skyLight = (byte) cachedStorage.getSkyLight(tp.localX, tp.localY, tp.localZ);
 		return tp;
 	}
 	

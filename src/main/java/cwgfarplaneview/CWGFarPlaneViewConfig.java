@@ -30,7 +30,7 @@ public class CWGFarPlaneViewConfig {
 				"Control both client side horizont distance and server side terrain shaper max update distance. Set to 0 to disable flat terrain rendering."));
 		TerrainConfig.VOLUMETRIC_HORIZONTAL.setMaxUpdateDistance(configuration.getInt("3D_distance_XZ", CATEGORY_GENERAL, 192, 0, 16777216,
 				"Control both client side horizont distance and server side terrain shaper max update distance. Set to 0 to disable 3D terrain rendering."));
-		TerrainConfig.VOLUMETRIC_HORIZONTAL.setMaxUpdateDistance(configuration.getInt("3D_distance_Y", CATEGORY_GENERAL, 16, 0, 16777216,
+		TerrainConfig.VOLUMETRIC_VERTICAL.setMaxUpdateDistance(configuration.getInt("3D_distance_Y", CATEGORY_GENERAL, 16, 0, 16777216,
 				"Control both client side horizont distance and server side terrain shaper max update distance. Set to 0 to disable 3D terrain rendering."));
 		
 		TerrainConfig.setClosePlaneRange(configuration.getFloat("close_plane_range", CATEGORY_CLIENT, 16.0f, 0.1f, 1024f,

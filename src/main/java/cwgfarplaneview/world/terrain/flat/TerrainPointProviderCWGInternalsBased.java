@@ -106,8 +106,8 @@ public class TerrainPointProviderCWGInternalsBased implements TerrainPointProvid
 	 
 	@Override
 	public TerrainPoint getTerrainPointAt(int meshX, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << TerrainConfig.meshSizeBitChunks;
-		int cubeZ = meshZ << TerrainConfig.meshSizeBitChunks;
+		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		while (!noiseConsumer.surfaceDetected) {
 			int cubeY = cubeHeightHint;
 			BlockPos start = new BlockPos(cubeX * 16, cubeY * 2, cubeZ * 16);

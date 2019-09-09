@@ -1,6 +1,6 @@
 package cwgfarplaneview.client;
 
-import static cwgfarplaneview.util.TerrainConfig.meshSizeBitBlocks;
+import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_BLOCKS;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.ClientProxy;
@@ -484,13 +484,13 @@ public class CubeRenderer {
 	}
 	
 	private static void addVector(BufferBuilder worldRendererIn, TerrainPoint3D point, float nx,float ny, float nz, float u, float v) {
-		int bx = (point.cubeX << meshSizeBitBlocks) + point.localX;
-		int by = (point.cubeY << meshSizeBitBlocks) + point.localY;
-		int bz = (point.cubeZ << meshSizeBitBlocks) + point.localZ;
+		int bx = (point.meshX << MESH_SIZE_BIT_BLOCKS) + point.localX;
+		int by = (point.meshY << MESH_SIZE_BIT_BLOCKS) + point.localY;
+		int bz = (point.meshZ << MESH_SIZE_BIT_BLOCKS) + point.localZ;
 		if (DEBUG_MODE) {
-			bx = point.cubeX << meshSizeBitBlocks;
-			by = point.cubeY << meshSizeBitBlocks;
-			bz = point.cubeZ << meshSizeBitBlocks;
+			bx = point.meshX << MESH_SIZE_BIT_BLOCKS;
+			by = point.meshY << MESH_SIZE_BIT_BLOCKS;
+			bz = point.meshZ << MESH_SIZE_BIT_BLOCKS;
 		}
 
 		BlockPos pos = new BlockPos(bx, by, bz);
@@ -509,9 +509,9 @@ public class CubeRenderer {
 	}
 	
 	private static void addDebugVectors(BufferBuilder worldRendererIn, TerrainPoint3D point, MutableWeightedNormal n1) {
-		int bx = point.cubeX << meshSizeBitBlocks;
-		int by = point.cubeY << meshSizeBitBlocks;
-		int bz = point.cubeZ << meshSizeBitBlocks;
+		int bx = point.meshX << MESH_SIZE_BIT_BLOCKS;
+		int by = point.meshY << MESH_SIZE_BIT_BLOCKS;
+		int bz = point.meshZ << MESH_SIZE_BIT_BLOCKS;
 		addRedVector(worldRendererIn, bx + 0.5, by, bz, 0f, 0f);
 		addRedVector(worldRendererIn, bx - 0.5, by, bz, 0f, 1.0f);
 		addRedVector(worldRendererIn, bx + n1.x * 16, by + n1.y * 16, bz + n1.z * 16, 1.0f, 1.0f);
@@ -522,9 +522,9 @@ public class CubeRenderer {
 	}
 	
 	private static void addYellowDebugVectors(BufferBuilder worldRendererIn, TerrainPoint3D point) {
-		int bx = point.cubeX << meshSizeBitBlocks;
-		int by = point.cubeY << meshSizeBitBlocks;
-		int bz = point.cubeZ << meshSizeBitBlocks;
+		int bx = point.meshX << MESH_SIZE_BIT_BLOCKS;
+		int by = point.meshY << MESH_SIZE_BIT_BLOCKS;
+		int bz = point.meshZ << MESH_SIZE_BIT_BLOCKS;
 		addYellowVector(worldRendererIn, bx + 0.5, by, bz - 0.5, 0f, 0f);
 		addYellowVector(worldRendererIn, bx + 0.5, by, bz + 0.5, 0f, 1.0f);
 		addYellowVector(worldRendererIn, bx - 0.5, by, bz - 0.5, 1.0f, 1.0f);

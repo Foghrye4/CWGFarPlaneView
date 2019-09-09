@@ -10,9 +10,9 @@ import net.minecraft.world.biome.Biome;
 import net.minecraftforge.registries.GameData;
 
 public class TerrainPoint3D implements XYZAddressable {
-	public int cubeX;
-	public int cubeY;
-	public int cubeZ;
+	public int meshX;
+	public int meshY;
+	public int meshZ;
 	public byte localX;
 	public byte localY;
 	public byte localZ;
@@ -26,9 +26,9 @@ public class TerrainPoint3D implements XYZAddressable {
 	}
 
 	public TerrainPoint3D(int x, int y, int z, byte localXIn, byte localYIn, byte localZIn, IBlockState blockStateIn, Biome biomeIn) throws IncorrectTerrainDataException {
-		cubeX = x;
-		cubeY = y;
-		cubeZ = z;
+		meshX = x;
+		meshY = y;
+		meshZ = z;
 		localX = localXIn;
 		localY = localYIn;
 		localZ = localZIn;
@@ -42,29 +42,31 @@ public class TerrainPoint3D implements XYZAddressable {
 
 	@Override
 	public int getX() {
-		return cubeX;
+		return meshX;
 	}
 	
 	@Override
 	public int getY() {
-		return cubeY;
+		return meshY;
 	}
 
 	@Override
 	public int getZ() {
-		return cubeZ;
+		return meshZ;
 	}
 
 	public NBTTagCompound toNBT() {
 		NBTTagCompound nbt = new NBTTagCompound();
-		nbt.setInteger("x", cubeX);
-		nbt.setInteger("y", cubeY);
-		nbt.setInteger("z", cubeZ);
+		nbt.setInteger("x", meshX);
+		nbt.setInteger("y", meshY);
+		nbt.setInteger("z", meshZ);
 		nbt.setByte("localX", localX);
 		nbt.setByte("localY", localY);
 		nbt.setByte("localZ", localZ);
 		nbt.setInteger("blockstate", GameData.getBlockStateIDMap().get(blockState));
 		nbt.setInteger("biome", Biome.getIdForBiome(biome));
+		nbt.setByte("blockLight", blockLight);
+		nbt.setByte("skyLight", skyLight);
 		return nbt;
 	}
 
@@ -77,12 +79,16 @@ public class TerrainPoint3D implements XYZAddressable {
 		byte localZ = nbt.getByte("localZ");
 		int bstate = nbt.getInteger("blockstate");
 		int biome = nbt.getInteger("biome");
-		return new TerrainPoint3D(x, y, z, localX, localY, localZ, bstate, biome);
+		TerrainPoint3D tp = new TerrainPoint3D(x, y, z, localX, localY, localZ, bstate, biome);
+		tp.blockLight = nbt.getByte("blockLight");
+		if(nbt.hasKey("skyLight"))
+			tp.skyLight = nbt.getByte("skyLight");
+		return tp;
 	}
 
 	@Override
 	public String toString() {
-		return "TerrainPoint3D[cubeX:" + cubeX + ",cubeY:" + cubeY + ",cubeZ:" + cubeZ + "]";
+		return "TerrainPoint3D[cubeX:" + meshX + ",cubeY:" + meshY + ",cubeZ:" + meshZ + "]";
 	}
 
 	public boolean isVisible() {

@@ -85,8 +85,10 @@ public class BlockColorsCache {
 		int averageHorizontalSideColor = getAverageColorOfQuads(horizontalQuads);
 		if(horizontalQuads.isEmpty())
 			averageHorizontalSideColor = unpecifiedSideColor;
-		if (state.getBlock() == Blocks.GRASS)
+		if (state.getBlock() == Blocks.GRASS || state.getBlock() == Blocks.TALLGRASS || state.getBlock() == Blocks.DOUBLE_PLANT)
 			return new GrassBlockColor(averageTopColor, averageHorizontalSideColor, averageBottomColor);
+		if (state.getBlock() == Blocks.LEAVES || state.getBlock() == Blocks.LEAVES2 || state.getBlock() == Blocks.VINE)
+			return new FoliageBlockColor(averageTopColor, averageHorizontalSideColor, averageBottomColor);
 		return new BlockColor(averageTopColor, averageHorizontalSideColor, averageBottomColor);
 	}
 	
@@ -135,6 +137,4 @@ public class BlockColorsCache {
 		}
 		return color.getColor(state, biome, pos, normalY);
 	}
-	
-
 }

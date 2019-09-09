@@ -1,6 +1,6 @@
 package cwgfarplaneview.util;
 
-import static cwgfarplaneview.util.TerrainConfig.meshSizeBitBlocks;
+import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_BLOCKS;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.flat.TerrainPoint;
@@ -33,14 +33,14 @@ public class TerrainUtil {
 	}
 
 	public static Vec3f calculateNormal(TerrainPoint tp1, TerrainPoint tp2, TerrainPoint tp3) {
-		int bx1 = tp1.chunkX << meshSizeBitBlocks;
-		int bz1 = tp1.chunkZ << meshSizeBitBlocks;
+		int bx1 = tp1.chunkX << MESH_SIZE_BIT_BLOCKS;
+		int bz1 = tp1.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int by1 = tp1.blockY;
-		int bx2 = tp2.chunkX << meshSizeBitBlocks;
-		int bz2 = tp2.chunkZ << meshSizeBitBlocks;
+		int bx2 = tp2.chunkX << MESH_SIZE_BIT_BLOCKS;
+		int bz2 = tp2.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int by2 = tp2.blockY;
-		int bx3 = tp3.chunkX << meshSizeBitBlocks;
-		int bz3 = tp3.chunkZ << meshSizeBitBlocks;
+		int bx3 = tp3.chunkX << MESH_SIZE_BIT_BLOCKS;
+		int bz3 = tp3.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int by3 = tp3.blockY;
 		int v1x = bx1 - bx2;
 		int v1y = by1 - by2;
@@ -61,15 +61,15 @@ public class TerrainUtil {
 	}
 
 	public static Vec3f calculateNormal(TerrainPoint3D tp1, TerrainPoint3D tp2, TerrainPoint3D tp3) {
-		int bx1 = tp1.cubeX*16 + tp1.localX;
-		int bz1 = tp1.cubeZ*16 + tp1.localZ;
-		int by1 = tp1.cubeY*16 + tp1.localY;
-		int bx2 = tp2.cubeX*16 + tp2.localX;
-		int bz2 = tp2.cubeZ*16 + tp2.localZ;
-		int by2 = tp2.cubeY*16 + tp2.localY;
-		int bx3 = tp3.cubeX*16 + tp3.localX;
-		int bz3 = tp3.cubeZ*16 + tp3.localZ;
-		int by3 = tp3.cubeY*16 + tp3.localY;
+		int bx1 = tp1.meshX*16 + tp1.localX;
+		int bz1 = tp1.meshZ*16 + tp1.localZ;
+		int by1 = tp1.meshY*16 + tp1.localY;
+		int bx2 = tp2.meshX*16 + tp2.localX;
+		int bz2 = tp2.meshZ*16 + tp2.localZ;
+		int by2 = tp2.meshY*16 + tp2.localY;
+		int bx3 = tp3.meshX*16 + tp3.localX;
+		int bz3 = tp3.meshZ*16 + tp3.localZ;
+		int by3 = tp3.meshY*16 + tp3.localY;
 		int v1x = bx1 - bx2;
 		int v1y = by1 - by2;
 		int v1z = bz1 - bz2;
@@ -86,15 +86,15 @@ public class TerrainUtil {
 	
 	/**Normal non normalized*/
 	public static Vec3i calculateNonNormalized(TerrainPoint3D tp1, TerrainPoint3D tp2, TerrainPoint3D tp3) {
-		int bx1 = tp1.cubeX;
-		int bz1 = tp1.cubeZ;
-		int by1 = tp1.cubeY;
-		int bx2 = tp2.cubeX;
-		int bz2 = tp2.cubeZ;
-		int by2 = tp2.cubeY;
-		int bx3 = tp3.cubeX;
-		int bz3 = tp3.cubeZ;
-		int by3 = tp3.cubeY;
+		int bx1 = tp1.meshX;
+		int bz1 = tp1.meshZ;
+		int by1 = tp1.meshY;
+		int bx2 = tp2.meshX;
+		int bz2 = tp2.meshZ;
+		int by2 = tp2.meshY;
+		int bx3 = tp3.meshX;
+		int bz3 = tp3.meshZ;
+		int by3 = tp3.meshY;
 		int v1x = bx1 - bx2;
 		int v1y = by1 - by2;
 		int v1z = bz1 - bz2;
@@ -109,7 +109,7 @@ public class TerrainUtil {
 
 
 	public static Vec3i vec3i(TerrainPoint3D from, TerrainPoint3D to) {
-		return new Vec3i(to.cubeX-from.cubeX, to.cubeY-from.cubeY, to.cubeZ-from.cubeZ);
+		return new Vec3i(to.meshX-from.meshX, to.meshY-from.meshY, to.meshZ-from.meshZ);
 	}
 
 	public static int crossAndDot(TerrainPoint3D base, TerrainPoint3D firstPoint,

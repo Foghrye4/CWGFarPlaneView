@@ -68,9 +68,9 @@ public class WorldSavedDataTerrainSurface3d extends WorldSavedData {
 	}
 
 	public static WorldSavedDataTerrainSurface3d getOrCreateWorldSavedData(World worldIn) {
-		if (instance != null)
-			return instance;
 		synchronized (lock) {
+			if (instance != null)
+				return instance;
 			WorldSavedDataTerrainSurface3d data = new WorldSavedDataTerrainSurface3d(DATA_IDENTIFIER);
 			File file1 = worldIn.getSaveHandler().getMapFileFromName(DATA_IDENTIFIER);
 			if (file1 != null && file1.exists()) {
@@ -89,15 +89,17 @@ public class WorldSavedDataTerrainSurface3d extends WorldSavedData {
 	}
 
 	public void save(World world) {
-		File file1 = world.getSaveHandler().getMapFileFromName(DATA_IDENTIFIER);
-		if (file1 != null) {
-			NBTTagCompound nbttagcompound = new NBTTagCompound();
-			nbttagcompound.setTag("data", this.writeToNBT(new NBTTagCompound()));
-			try (FileOutputStream fileoutputstream = new FileOutputStream(file1)) {
-				CompressedStreamTools.writeCompressed(nbttagcompound, fileoutputstream);
-				fileoutputstream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+		synchronized (lock) {
+			File file1 = world.getSaveHandler().getMapFileFromName(DATA_IDENTIFIER);
+			if (file1 != null) {
+				NBTTagCompound nbttagcompound = new NBTTagCompound();
+				nbttagcompound.setTag("data", this.writeToNBT(new NBTTagCompound()));
+				try (FileOutputStream fileoutputstream = new FileOutputStream(file1)) {
+					CompressedStreamTools.writeCompressed(nbttagcompound, fileoutputstream);
+					fileoutputstream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

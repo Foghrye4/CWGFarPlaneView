@@ -91,9 +91,9 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 
 	@Override
 	public TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << TerrainConfig.meshSizeBitChunks;
-		int cubeZ = meshZ << TerrainConfig.meshSizeBitChunks;
-		int cubeY = meshY << TerrainConfig.meshSizeBitChunks;
+		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cubeY = meshY << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
 			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
 				return entry.getValue().getTerrainPointAt(meshX, meshY, meshZ);

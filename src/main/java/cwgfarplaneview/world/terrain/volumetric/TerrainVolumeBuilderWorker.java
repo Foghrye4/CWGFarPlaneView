@@ -7,6 +7,7 @@ import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_VERTICAL;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface3d;
@@ -17,6 +18,7 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.ReportedException;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 
 public class TerrainVolumeBuilderWorker implements Runnable {
@@ -26,6 +28,8 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	private WorldSavedDataTerrainSurface3d data;
 	private TerrainPoint3DProvider diskTPProvider;
 	private TerrainPoint3DProvider generatorTPProvider;
+	public final ConcurrentLinkedQueue<TerrainPoint3D> offthreadTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D>();
+	
 	private volatile boolean run = true;
 	public volatile boolean dumpProgressInfo = false;
 	public int minimalX;
@@ -101,6 +105,13 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			}
 			closestSide = getSideClosestToPlayer(px, py, pz);
 		}
+		while(!offthreadTerrainPointsUpdate.isEmpty()) {
+			TerrainPoint3D tp = offthreadTerrainPointsUpdate.poll();
+			if (tp.meshX >= minimalX && tp.meshX <= maximalX && tp.meshY >= minimalY && tp.meshY <= maximalY && tp.meshZ >= minimalZ && tp.meshZ <= maximalZ) {
+				pointsList.add(tp);
+			}
+			// Terrain points outside of borders will be retrieved from world saved data.
+		}
 		if (!player.isDead && !pointsList.isEmpty()) {
 			network.send3DTerrainPointsToClient(player, pointsList);
 		}
@@ -122,8 +133,10 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 
 	private void reset() {
 		minimalX = player.chunkCoordX;
+		minimalY = player.chunkCoordY;
 		minimalZ = player.chunkCoordZ;
 		maximalX = player.chunkCoordX;
+		maximalY = player.chunkCoordY;
 		maximalZ = player.chunkCoordZ;
 	}
 
@@ -139,35 +152,38 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			newlyGenerated = true;
 			point = this.generatorTPProvider.getTerrainPointAt(x, y, z);
 		}
+		if(newlyGenerated)
+			data.addToMap(point);
 		pointsList.add(point);
 		return newlyGenerated;
 	}
 
 	private EnumFacing getSideClosestToPlayer(int px, int py, int pz) {
-		int minXYZ = Integer.MAX_VALUE;
+		int minXZ = Integer.MAX_VALUE;
+		int minY = Integer.MAX_VALUE;
 		EnumFacing closestSide = null;
-		if (maximalX - px < minXYZ && maximalX - px < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXYZ = maximalX - px;
+		if (maximalX - px < minXZ && maximalX - px < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXZ = maximalX - px;
 			closestSide = EnumFacing.EAST;
 		}
-		if (maximalY - py < minXYZ && maximalY - py < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
-			minXYZ = maximalY - py;
+		if (maximalY - py < minY && maximalY - py < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
+			minY = maximalY - py;
 			closestSide = EnumFacing.UP;
 		}
-		if (maximalZ - pz < minXYZ && maximalZ - pz < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXYZ = maximalZ - pz;
+		if (maximalZ - pz < minXZ && maximalZ - pz < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXZ = maximalZ - pz;
 			closestSide = EnumFacing.SOUTH;
 		}
-		if (px - minimalX < minXYZ && px - minimalX < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXYZ = px - minimalX;
+		if (px - minimalX < minXZ && px - minimalX < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXZ = px - minimalX;
 			closestSide = EnumFacing.WEST;
 		}
-		if (py - minimalY < minXYZ && py - minimalY < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
-			minXYZ = py - minimalY;
+		if (py - minimalY < minY && py - minimalY < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
+			minY = py - minimalY;
 			closestSide = EnumFacing.DOWN;
 		}
-		if (pz - minimalZ < minXYZ && pz - minimalZ < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXYZ = px - minimalZ;
+		if (pz - minimalZ < minXZ && pz - minimalZ < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXZ = px - minimalZ;
 			closestSide = EnumFacing.NORTH;
 		}
 		return closestSide;
@@ -201,5 +217,9 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 
 	public void stop() {
 		run = false;
+	}
+
+	public World getWorld() {
+		return world;
 	}
 }

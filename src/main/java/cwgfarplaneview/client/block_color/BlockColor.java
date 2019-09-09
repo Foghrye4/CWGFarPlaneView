@@ -19,6 +19,7 @@ public class BlockColor {
 	
 	public int getColor(IBlockState state, Biome biome, BlockPos pos, float normalY) {
 		int topSideColor = getTopColor(biome, pos);
+		int horizontalSideColor = getSideColor(biome, pos);
 		if(normalY>=1.0f) {
 			return topSideColor;
 		}
@@ -26,17 +27,17 @@ public class BlockColor {
 			return bottomSideBlockColor;
 		}
 		else if (normalY >= 0.0f) {
-			int sideRed = getRed(horizontalSidesBlockColor);
-			int sideGreen = getGreen(horizontalSidesBlockColor);
-			int sideBlue = getBlue(horizontalSidesBlockColor);
+			int sideRed = getRed(horizontalSideColor);
+			int sideGreen = getGreen(horizontalSideColor);
+			int sideBlue = getBlue(horizontalSideColor);
 			int red = (int)((getRed(topSideColor) - sideRed) * normalY) + sideRed;
 			int green = (int)((getGreen(topSideColor) - sideGreen) * normalY) + sideGreen;
 			int blue = (int)((getBlue(topSideColor) - sideBlue) * normalY) + sideBlue;
 			return red << 16 | (green & 255) << 8 | blue;
 		} else {
-			int sideRed = getRed(horizontalSidesBlockColor);
-			int sideGreen = getGreen(horizontalSidesBlockColor);
-			int sideBlue = getBlue(horizontalSidesBlockColor);
+			int sideRed = getRed(horizontalSideColor);
+			int sideGreen = getGreen(horizontalSideColor);
+			int sideBlue = getBlue(horizontalSideColor);
 			int red = (int)((sideRed - getRed(bottomSideBlockColor)) * normalY) + sideRed;
 			int green = (int)((sideGreen - getGreen(bottomSideBlockColor)) * normalY) + sideGreen;
 			int blue = (int)((sideBlue - getBlue(bottomSideBlockColor)) * normalY) + sideBlue;
@@ -44,6 +45,10 @@ public class BlockColor {
 		}
 	}
 	
+	protected int getSideColor(Biome biome, BlockPos pos) {
+		return horizontalSidesBlockColor;
+	}
+
 	protected int getTopColor(Biome biome, BlockPos pos) {
 		if (biome.isSnowyBiome() || biome.getTemperature(pos) < 0.15f)
 			return SNOW_COLOR;

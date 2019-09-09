@@ -2,8 +2,8 @@ package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 import static cwgfarplaneview.util.TerrainConfig.FLAT;
-import static cwgfarplaneview.util.TerrainConfig.meshSizeBitBlocks;
-import static cwgfarplaneview.util.TerrainConfig.meshSizeBitChunks;
+import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_BLOCKS;
+import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -92,8 +92,8 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 			int z1 = maximalZMesh;
 			EntityPlayerSP player = Minecraft.getMinecraft().player;
 			if (player != null) {
-				int pmccx = player.chunkCoordX >> meshSizeBitChunks;
-				int pmccz = player.chunkCoordZ >> meshSizeBitChunks;
+				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
+				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
 				x0 = Math.max(x0, pmccx - FLAT.maxUpdateDistanceCells);
 				x1 = Math.min(x1, pmccx + FLAT.maxUpdateDistanceCells);
 				z0 = Math.max(z0, pmccz - FLAT.maxUpdateDistanceCells);
@@ -136,8 +136,8 @@ public class ClientTerrainSurfaceBufferBuilder implements Runnable {
 	}
 
 	private void addVector(BufferBuilder worldRendererIn, TerrainPoint point, Vec3f n1, float u, float v) {
-		int bx = point.chunkX << meshSizeBitBlocks;
-		int bz = point.chunkZ << meshSizeBitBlocks;
+		int bx = point.chunkX << MESH_SIZE_BIT_BLOCKS;
+		int bz = point.chunkZ << MESH_SIZE_BIT_BLOCKS;
 		int height = point.blockY;
 		BlockPos pos = new BlockPos(bx, height, bz);
 		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;

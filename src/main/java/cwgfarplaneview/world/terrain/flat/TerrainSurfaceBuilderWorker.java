@@ -41,9 +41,9 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 		CubeProviderServer cubeProvider = (CubeProviderServer) worldServerIn.getChunkProvider();
 		ICubeGenerator generator = cubeProvider.getCubeGenerator();
 		if(generator instanceof CustomTerrainGenerator)
-			tpProvider = new TerrainPointProviderCWGInternalsBased(world,world.getBiomeProvider(),CustomGeneratorSettings.load(world), world.getSeed());
+			tpProvider = new TerrainPointProviderCWGInternalsBased(getWorld(),getWorld().getBiomeProvider(),CustomGeneratorSettings.load(getWorld()), getWorld().getSeed());
 		else
-			tpProvider = new TerrainPointProviderGeneratorBased(world,generator);
+			tpProvider = new TerrainPointProviderGeneratorBased(getWorld(),generator);
 		minimalX = player.chunkCoordX;
 		minimalZ = player.chunkCoordZ;
 		maximalX = player.chunkCoordX;
@@ -151,7 +151,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	@Override
 	public void run() {
 		try {
-			data = WorldSavedDataTerrainSurface2d.getOrCreateWorldSavedData(world);
+			data = WorldSavedDataTerrainSurface2d.getOrCreateWorldSavedData(getWorld());
 		} catch (ReportedException e) {
 			logger.catching(e);
 			data = new WorldSavedDataTerrainSurface2d();
@@ -164,7 +164,7 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 				tick();
 			}
 			logger.info("Finishing terrain builder thread");
-			data.save(world);
+			data.save(getWorld());
 			logger.info("Terrain data saved");
 		} catch (IncorrectTerrainDataException | ReportedException | InterruptedException e) {
 			logger.catching(e);
@@ -176,5 +176,9 @@ public class TerrainSurfaceBuilderWorker implements Runnable {
 	
 	public void stop() {
 		run = false;
+	}
+
+	public WorldServer getWorld() {
+		return world;
 	}
 }

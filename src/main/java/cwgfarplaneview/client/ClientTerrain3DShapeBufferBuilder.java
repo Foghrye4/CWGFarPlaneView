@@ -1,7 +1,7 @@
 package cwgfarplaneview.client;
 
 import static cwgfarplaneview.util.TerrainConfig.*;
-import static cwgfarplaneview.util.TerrainConfig.meshSizeBitChunks;
+import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -122,9 +122,9 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 			int z1 = maximalZMesh;
 			EntityPlayerSP player = Minecraft.getMinecraft().player;
 			if (player != null) {
-				int pmccx = player.chunkCoordX >> meshSizeBitChunks;
-				int pmccy = player.chunkCoordY >> meshSizeBitChunks;
-				int pmccz = player.chunkCoordZ >> meshSizeBitChunks;
+				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
+				int pmccy = player.chunkCoordY >> MESH_SIZE_BIT_CHUNKS;
+				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
 				x0 = Math.max(x0, pmccx - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
 				x1 = Math.min(x1, pmccx + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
 				y0 = Math.max(y0, pmccy - VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
