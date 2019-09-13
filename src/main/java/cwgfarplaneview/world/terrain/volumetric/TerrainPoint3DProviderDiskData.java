@@ -7,25 +7,19 @@ import java.util.Optional;
 
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.save.SaveSection3D;
-import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.util.DiskDataUtil;
-import cwgfarplaneview.util.TerrainUtil;
+import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import io.github.opencubicchunks.cubicchunks.core.util.AddressTools;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Biomes;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 import net.minecraftforge.common.util.Constants;
-import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
 
 public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 	private SaveSection3D cubeIO;
@@ -44,7 +38,7 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 		EntryLocation3D ebsKey = new EntryLocation3D(cubeX, cubeY, cubeZ);
 		Optional<ByteBuffer> buf;
 		try {
-			buf = cubeIO.load(ebsKey);
+			buf = cubeIO.load(ebsKey, false);
 			if (!buf.isPresent()) {
 				return null;
 			}

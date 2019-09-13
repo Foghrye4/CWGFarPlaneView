@@ -8,6 +8,7 @@ import java.util.function.ToIntFunction;
 
 import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.util.TerrainUtil;
+import cwgfarplaneview.world.biome.CachedRoughBiomeSource;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
@@ -43,7 +44,7 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 			CustomGeneratorSettings settings, final long seed) {
 		super(worldIn);
 		this.conf = settings;
-		this.biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), biomeProvider, 2);
+		this.biomeSource = new CachedRoughBiomeSource(world, conf.createBiomeBlockReplacerConfig(), biomeProvider, 2);
 		this.noiseConsumer = new Cell3DNoiseConsumer(biomeSource);
 		initGenerator(seed);
 
