@@ -2,8 +2,11 @@ package cwgfarplaneview.client;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
 import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
+import static cwgfarplaneview.util.TerrainConfig.FLAT;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_HORIZONTAL;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_VERTICAL;
 import static cwgfarplaneview.util.TerrainConfig.closePlane;
-import static cwgfarplaneview.util.TerrainConfig.*;
+import static cwgfarplaneview.util.TerrainConfig.getFarClippingRange;
 
 import java.nio.FloatBuffer;
 
@@ -11,7 +14,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Project;
 
-import cwgfarplaneview.util.TerrainConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -52,7 +54,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 	private int terrainVolumetricDisplayList = -1;
 	private int seaDisplayList = -1;
 	private int backgroundDisplayList = -1;
-    private static final FloatBuffer fogColor = BufferUtils.createFloatBuffer(4);
+    @SuppressWarnings("unused")
+	private static final FloatBuffer fogColor = BufferUtils.createFloatBuffer(4);
 
 	@Override
 	public void render(float partialTicks, WorldClient world, Minecraft mc) {

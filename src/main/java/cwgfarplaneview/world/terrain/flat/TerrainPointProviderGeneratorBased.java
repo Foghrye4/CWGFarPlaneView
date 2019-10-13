@@ -1,7 +1,7 @@
 package cwgfarplaneview.world.terrain.flat;
 
 import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-import static cwgfarplaneview.util.TerrainUtil.*;
+import static cwgfarplaneview.util.TerrainUtil.isAirOrWater;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;

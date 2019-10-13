@@ -1,8 +1,9 @@
 package cwgfarplaneview.client;
 
+import static cwgfarplaneview.CWGFarPlaneViewMod.logger;
+
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
 
 public class DummyShader {
 	private static final String vertShaderSource = "#version 120" + 

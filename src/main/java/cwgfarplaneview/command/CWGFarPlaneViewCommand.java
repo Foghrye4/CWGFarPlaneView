@@ -2,22 +2,13 @@ package cwgfarplaneview.command;
 
 import static cwgfarplaneview.CWGFarPlaneViewMod.network;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
 import cwgfarplaneview.CWGFarPlaneViewMod;
-import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
-import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.biome.Biome;
 
 public class CWGFarPlaneViewCommand extends CommandBase {
 

@@ -1,5 +1,12 @@
 package cwgfarplaneview.client.gui;
 
+import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
+import static cwgfarplaneview.CWGFarPlaneViewMod.config;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import cwgfarplaneview.CWGFarPlaneViewConfig;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.fml.client.config.DummyConfigElement;
@@ -7,13 +14,6 @@ import net.minecraftforge.fml.client.config.GuiConfig;
 import net.minecraftforge.fml.client.config.GuiConfigEntries;
 import net.minecraftforge.fml.client.config.GuiConfigEntries.CategoryEntry;
 import net.minecraftforge.fml.client.config.IConfigElement;
-
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import cwgfarplaneview.CWGFarPlaneViewConfig;
 
 public class GuiCWGFPVConfig extends GuiConfig {
 

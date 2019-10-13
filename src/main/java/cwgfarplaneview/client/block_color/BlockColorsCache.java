@@ -10,25 +10,16 @@ import java.util.Map;
 
 import org.lwjgl.opengl.GL11;
 
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockSand;
-import net.minecraft.block.BlockStainedHardenedClay;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.client.renderer.block.model.MultipartBakedModel;
-import net.minecraft.client.renderer.block.model.SimpleBakedModel;
-import net.minecraft.client.renderer.block.model.WeightedBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
-import net.minecraftforge.registries.GameData;
 
 public class BlockColorsCache {
 
@@ -130,6 +121,8 @@ public class BlockColorsCache {
 	}
 	
 	public int getBlockColor(IBlockState state, Biome biome, BlockPos pos, float normalY) {
+		if (biome == null)
+			throw new NullPointerException("Biome cannot be null!");
 		BlockColor color = map.get(state);
 		if(color==null) {
 			color = this.createBlockColor(state);

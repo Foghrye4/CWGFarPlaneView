@@ -16,7 +16,7 @@ public class SeedProducerGenLayer extends GenLayer {
 	
 	public int getChunkSpecificRandom(int areaX, int areaY) {
 		this.initChunkSeed(areaX, areaY);
-		return this.nextInt(57*13*30*299999);
+		return this.nextInt(Integer.MAX_VALUE);
 	}
 
 }

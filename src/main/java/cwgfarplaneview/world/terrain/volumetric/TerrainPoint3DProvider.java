@@ -1,13 +1,12 @@
 package cwgfarplaneview.world.terrain.volumetric;
 
+import javax.annotation.Nullable;
+
 import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.util.Coords;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.Biome;
 
@@ -19,11 +18,13 @@ public abstract class TerrainPoint3DProvider {
 		world = worldIn;
 	}
 
-	abstract TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException;
+	abstract TerrainCube getTerrainCubeAt(@Nullable TerrainCube cube, int cubeX, int cubeY, int cubeZ) throws IncorrectTerrainDataException;
 	abstract protected void reset(int cubeX, int cubeY, int cubeZ);
 	abstract protected IBlockState getBlockStateAt(int x,int y, int z);
+	abstract protected int getBlockLightAt(int localX,int localY, int localZ);
+	abstract protected int getSkyLightAt(int localX,int localY, int localZ);
 	
-	protected TerrainPoint3D getPointOf(int meshX, int meshY, int meshZ)
+	protected void getPointOf(TerrainCube cube, int meshX, int meshY, int meshZ)
 			throws IncorrectTerrainDataException {
 		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
@@ -37,14 +38,26 @@ public abstract class TerrainPoint3DProvider {
 		IBlockState bsfff = getBlockStateAt(x0 + 15, y0 + 15, z0 + 15);
 		boolean t000isAirOrWater = TerrainUtil.isAirOrWater(bs000);
 		boolean tfffisAirOrWater = TerrainUtil.isAirOrWater(bsfff);
-		if(t000isAirOrWater && tfffisAirOrWater)
-			return new TerrainPoint3D(meshX, meshY, meshZ, (byte) 0, (byte) 0, (byte) 0, bs000,
-					getBiomeAt(Coords.cubeToMinBlock(cubeX), Coords.cubeToMinBlock(cubeY),
-							Coords.cubeToMinBlock(cubeZ)));
-		if(!t000isAirOrWater && !tfffisAirOrWater)
-			return new TerrainPoint3D(meshX, meshY, meshZ, (byte) 15, (byte) 15, (byte) 15, bsfff,
-					getBiomeAt(Coords.cubeToMinBlock(cubeX) + 15, Coords.cubeToMinBlock(cubeY) + 15,
-							Coords.cubeToMinBlock(cubeZ) + 15));
+		if(t000isAirOrWater && tfffisAirOrWater) {
+			Biome biome = getBiomeAt(Coords.cubeToMinBlock(cubeX), Coords.cubeToMinBlock(cubeY),
+					Coords.cubeToMinBlock(cubeZ));
+			cube.setBlock(meshX, meshY, meshZ, bs000);
+			cube.biomeData.set(meshX, meshY, meshZ, biome);
+			cube.setLocals(meshX, meshY, meshZ, 0, 0, 0);
+			cube.setBlockLight(meshX, meshY, meshZ, getBlockLightAt(0,0,0));
+			cube.setSkyLight(meshX, meshY, meshZ, getSkyLightAt(0,0,0));
+			return;
+		}
+		if(!t000isAirOrWater && !tfffisAirOrWater) {
+			Biome biome = getBiomeAt(Coords.cubeToMinBlock(cubeX) + 15, Coords.cubeToMinBlock(cubeY) + 15,
+					Coords.cubeToMinBlock(cubeZ) + 15);
+			cube.setBlock(meshX, meshY, meshZ, bsfff);
+			cube.biomeData.set(meshX, meshY, meshZ, biome);
+			cube.setLocals(meshX, meshY, meshZ, 15, 15, 15);
+			cube.setBlockLight(meshX, meshY, meshZ, getBlockLightAt(15,15,15));
+			cube.setSkyLight(meshX, meshY, meshZ, getSkyLightAt(15,15,15));
+			return;
+		}
 		if(t000isAirOrWater && !tfffisAirOrWater) {
 			boolean search = true;
 			int ix =15;
@@ -70,9 +83,14 @@ public abstract class TerrainPoint3DProvider {
 					search = true;
 				}
 			}
-			return new TerrainPoint3D(meshX, meshY, meshZ, (byte) ix, (byte) iy, (byte) iz, bs,
-					getBiomeAt(Coords.cubeToMinBlock(cubeX) + ix, Coords.cubeToMinBlock(cubeY) + iy,
-							Coords.cubeToMinBlock(cubeZ) + iz));
+			Biome biome = getBiomeAt(Coords.cubeToMinBlock(cubeX) + ix, Coords.cubeToMinBlock(cubeY) + iy,
+					Coords.cubeToMinBlock(cubeZ) + iz);
+			cube.setBlock(meshX, meshY, meshZ, bs);
+			cube.biomeData.set(meshX, meshY, meshZ, biome);
+			cube.setLocals(meshX, meshY, meshZ, ix, iy, iz);
+			cube.setBlockLight(meshX, meshY, meshZ, getBlockLightAt(ix,iy,iz));
+			cube.setSkyLight(meshX, meshY, meshZ, getSkyLightAt(ix,iy,iz));
+			return;
 		}
 		if(!t000isAirOrWater && tfffisAirOrWater) {
 			boolean search = true;
@@ -99,9 +117,14 @@ public abstract class TerrainPoint3DProvider {
 					search = true;
 				}
 			}
-			return new TerrainPoint3D(meshX, meshY, meshZ, (byte) ix, (byte) iy, (byte) iz, bs,
-					getBiomeAt(Coords.cubeToMinBlock(cubeX) + ix, Coords.cubeToMinBlock(cubeY) + iy,
-							Coords.cubeToMinBlock(cubeZ) + iz));
+			Biome biome = getBiomeAt(Coords.cubeToMinBlock(cubeX) + ix, Coords.cubeToMinBlock(cubeY) + iy,
+					Coords.cubeToMinBlock(cubeZ) + iz);
+			cube.setBlock(meshX, meshY, meshZ, bs);
+			cube.biomeData.set(meshX, meshY, meshZ, biome);
+			cube.setLocals(meshX, meshY, meshZ, ix, iy, iz);
+			cube.setBlockLight(meshX, meshY, meshZ, getBlockLightAt(ix,iy,iz));
+			cube.setSkyLight(meshX, meshY, meshZ, getSkyLightAt(ix,iy,iz));
+			return;
 		}
 		throw new IllegalStateException();
 	}

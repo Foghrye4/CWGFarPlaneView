@@ -1,11 +1,12 @@
 package cwgfarplaneview;
 
+import static cwgfarplaneview.CWGFarPlaneViewMod.MODID;
+import static cwgfarplaneview.CWGFarPlaneViewMod.config;
+
+import cwgfarplaneview.util.TerrainConfig;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import static cwgfarplaneview.CWGFarPlaneViewMod.*;
-
-import cwgfarplaneview.util.TerrainConfig;
 
 public class CWGFarPlaneViewConfig {
 	public static final String CATEGORY_GENERAL = "general";

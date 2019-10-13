@@ -5,11 +5,10 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.network;
 import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_HORIZONTAL;
 import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_VERTICAL;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import cwgfarplaneview.event.CWGFarPlaneViewEventHandler;
+import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface3d;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
@@ -26,8 +25,7 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	private EntityPlayerMP player;
 	private final WorldServer world;
 	private WorldSavedDataTerrainSurface3d data;
-	private TerrainPoint3DProvider diskTPProvider;
-	private TerrainPoint3DProvider generatorTPProvider;
+	private TerrainPoint3DProviderCWGInternalsBased tpProvider;
 	public final ConcurrentLinkedQueue<TerrainPoint3D> offthreadTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D>();
 	
 	private volatile boolean run = true;
@@ -43,78 +41,26 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	public TerrainVolumeBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
 		world = worldServerIn;
-		generatorTPProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
+		tpProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
 				CustomGeneratorSettings.load(world), world.getSeed());
-		diskTPProvider = new TerrainPoint3DProviderDiskData(world);
-		minimalX = player.chunkCoordX;
-		minimalY = player.chunkCoordY;
-		minimalZ = player.chunkCoordZ;
-		maximalX = player.chunkCoordX;
-		maximalY = player.chunkCoordY;
-		maximalZ = player.chunkCoordZ;
+		minimalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		minimalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		minimalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		logger.debug("3D builder worker for player " + player.getName() + " initialized.");
 	}
 
 	public void tick() throws IncorrectTerrainDataException {
-		int px = player.chunkCoordX;
-		int py = player.chunkCoordY;
-		int pz = player.chunkCoordZ;
+		int px = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int py = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int pz = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		if (px < minimalX || px > maximalX || py < minimalY || py > maximalY || pz < minimalZ || pz > maximalZ) {
 			reset();
 		}
-		List<TerrainPoint3D> pointsList = new ArrayList<TerrainPoint3D>();
+		TerrainCube cube = null;
 		EnumFacing closestSide = getSideClosestToPlayer(px, py, pz);
-		int pointsGeneratedThisTick = 0;
-		a: while (closestSide != null && pointsGeneratedThisTick < 204 && pointsList.size() < 409) {
-			if (closestSide.getAxis() == Axis.X) {
-				int x = closestSide == EnumFacing.EAST ? ++maximalX : --minimalX;
-				for (int y = minimalY; y <= maximalY; y++) {
-					for (int z = minimalZ; z <= maximalZ; z++) {
-						if (this.addPointAt(pointsList, x, y, z))
-							pointsGeneratedThisTick++;
-						if (!run || player.isDead)
-							break a;
-						if (dumpProgressInfo)
-							this.dumpProgressInfo(pointsGeneratedThisTick, pointsList.size());
-					}
-				}
-			} else if (closestSide.getAxis() == Axis.Z) {
-				int z = closestSide == EnumFacing.SOUTH ? ++maximalZ : --minimalZ;
-				for (int y = minimalY; y <= maximalY; y++) {
-					for (int x = minimalX; x <= maximalX; x++) {
-						if (this.addPointAt(pointsList, x, y, z))
-							pointsGeneratedThisTick++;
-						if (!run || player.isDead)
-							break a;
-						if (dumpProgressInfo)
-							this.dumpProgressInfo(pointsGeneratedThisTick, pointsList.size());
-					}
-				}
-			} else {
-				int y = closestSide == EnumFacing.UP ? ++maximalY : --minimalY;
-				for (int z = minimalZ; z <= maximalZ; z++) {
-					for (int x = minimalX; x <= maximalX; x++) {
-						if (this.addPointAt(pointsList, x, y, z))
-							pointsGeneratedThisTick++;
-						if (!run || player.isDead)
-							break a;
-						if (dumpProgressInfo)
-							this.dumpProgressInfo(pointsGeneratedThisTick, pointsList.size());
-					}
-				}
-			}
-			closestSide = getSideClosestToPlayer(px, py, pz);
-		}
-		while(!offthreadTerrainPointsUpdate.isEmpty()) {
-			TerrainPoint3D tp = offthreadTerrainPointsUpdate.poll();
-			if (tp.meshX >= minimalX && tp.meshX <= maximalX && tp.meshY >= minimalY && tp.meshY <= maximalY && tp.meshZ >= minimalZ && tp.meshZ <= maximalZ) {
-				pointsList.add(tp);
-			}
-			// Terrain points outside of borders will be retrieved from world saved data.
-		}
-		if (!player.isDead && !pointsList.isEmpty()) {
-			network.send3DTerrainPointsToClient(player, pointsList);
-		}
 		if (closestSide == null) {
 			try {
 				synchronized (lock) {
@@ -123,39 +69,62 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			return;
+		}
+		if (closestSide.getAxis() == Axis.X) {
+			int x = closestSide == EnumFacing.EAST ? ++maximalX : --minimalX;
+			for (int y = minimalY; y <= maximalY; y++) {
+				for (int z = minimalZ; z <= maximalZ; z++) {
+					cube = this.addCubeAt(x, y, z);
+					network.sendTerrainCubeToPlayer(player, cube);
+				}
+			}
+		} else if (closestSide.getAxis() == Axis.Z) {
+			int z = closestSide == EnumFacing.SOUTH ? ++maximalZ : --minimalZ;
+			for (int y = minimalY; y <= maximalY; y++) {
+				for (int x = minimalX; x <= maximalX; x++) {
+					cube = this.addCubeAt(x, y, z);
+					network.sendTerrainCubeToPlayer(player, cube);
+				}
+			}
+		} else if (closestSide.getAxis() == Axis.Y) {
+			int y = closestSide == EnumFacing.UP ? ++maximalY : --minimalY;
+			for (int z = minimalZ; z <= maximalZ; z++) {
+				for (int x = minimalX; x <= maximalX; x++) {
+					cube = this.addCubeAt(x, y, z);
+					network.sendTerrainCubeToPlayer(player, cube);
+				}
+			}
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void dumpProgressInfo(int generated, int overall) {
 		player.sendMessage(new TextComponentString(String.format("Volumetric generated: %d, Overall: %d", generated, overall)));
 		dumpProgressInfo = false;
 	}
 
 	private void reset() {
-		minimalX = player.chunkCoordX;
-		minimalY = player.chunkCoordY;
-		minimalZ = player.chunkCoordZ;
-		maximalX = player.chunkCoordX;
-		maximalY = player.chunkCoordY;
-		maximalZ = player.chunkCoordZ;
+		minimalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		minimalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		minimalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		maximalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 	}
 
-	private boolean addPointAt(List<TerrainPoint3D> pointsList, int x, int y, int z)
+	private TerrainCube addCubeAt(int x, int y, int z)
 			throws IncorrectTerrainDataException {
 		boolean newlyGenerated = false;
-		TerrainPoint3D point = data.get(x, y, z);
-		if (point == null) {
+		TerrainCube cube = data.get(x, y, z);
+		if(cube == null) {
+			cube = this.tpProvider.getTerrainCubeAt(cube, x, y, z);
 			newlyGenerated = true;
-			point = this.diskTPProvider.getTerrainPointAt(x, y, z);
 		}
-		if (point == null) {
-			newlyGenerated = true;
-			point = this.generatorTPProvider.getTerrainPointAt(x, y, z);
+		if(newlyGenerated) {
+			data.addToMap(cube);
 		}
-		if(newlyGenerated)
-			data.addToMap(point);
-		pointsList.add(point);
-		return newlyGenerated;
+		return cube;
 	}
 
 	private EnumFacing getSideClosestToPlayer(int px, int py, int pz) {

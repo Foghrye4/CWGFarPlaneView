@@ -5,29 +5,21 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.network;
 import java.util.HashSet;
 import java.util.Set;
 
-import cwgfarplaneview.util.TerrainConfig;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface2d;
-import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface3d;
-import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.flat.TerrainSurfaceBuilderWorker;
-import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
-import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3DProviderUnloadedCube;
 import cwgfarplaneview.world.terrain.volumetric.TerrainVolumeBuilderWorker;
+import io.github.opencubicchunks.cubicchunks.api.world.CubeUnWatchEvent;
+import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.api.world.CubeUnWatchEvent;
-import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 
 public class CWGFarPlaneViewEventHandler {
 
 	public static Set<TerrainSurfaceBuilderWorker> workers = new HashSet<TerrainSurfaceBuilderWorker>();
 	public static Set<TerrainVolumeBuilderWorker> volumeWorkers = new HashSet<TerrainVolumeBuilderWorker>();
-	public static TerrainPoint3DProviderUnloadedCube unloadedCubeTPProvider = new TerrainPoint3DProviderUnloadedCube();
 
 	@SubscribeEvent
 	public void onEntityJoinEvent(EntityJoinWorldEvent event) {
@@ -71,21 +63,7 @@ public class CWGFarPlaneViewEventHandler {
 		World world = (World) event.getWorld();
 		if (!isRenderableWorld(world))
 			return;
-		WorldSavedDataTerrainSurface3d data = WorldSavedDataTerrainSurface3d.getOrCreateWorldSavedData(world);
-		CubePos cpos = event.getCubePos();
-		unloadedCubeTPProvider.setCube(event.getCube());
-		try {
-			TerrainPoint3D tp = unloadedCubeTPProvider.getTerrainPointAt(cpos.getX()>>TerrainConfig.MESH_SIZE_BIT_CHUNKS, cpos.getY()>>TerrainConfig.MESH_SIZE_BIT_CHUNKS, cpos.getZ()>>TerrainConfig.MESH_SIZE_BIT_CHUNKS);
-			data.addToMap(tp);
-			for (TerrainVolumeBuilderWorker worker : volumeWorkers) {
-				if (worker.getWorld() == world) {
-					worker.offthreadTerrainPointsUpdate.add(tp);
-				}
-			}
-		} catch (IncorrectTerrainDataException e) {
-			e.printStackTrace();
-		}
-		
+//		WorldSavedDataTerrainSurface3d data = WorldSavedDataTerrainSurface3d.getOrCreateWorldSavedData(world);
 	}
 
 	private boolean isRenderableWorld(World world) {

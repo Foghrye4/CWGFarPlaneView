@@ -6,8 +6,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.function.ToIntFunction;
 
+import javax.annotation.Nullable;
+
 import cwgfarplaneview.util.TerrainConfig;
-import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.world.biome.CachedRoughBiomeSource;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
@@ -19,9 +20,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.NoiseS
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
 public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvider {
@@ -91,18 +90,31 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 	}
 
 	@Override
-	public TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		int cubeY = meshY << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
-			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
-				return entry.getValue().getTerrainPointAt(meshX, meshY, meshZ);
+	public TerrainCube getTerrainCubeAt(@Nullable TerrainCube cube, int tcX, int tcY, int tcZ)
+			throws IncorrectTerrainDataException {
+		if (cube == null)
+			cube = new TerrainCube(world, tcX, tcY, tcZ);
+		int cx0 = tcX << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cy0 = tcY << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cz0 = tcZ << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		for (int ix = cx0; ix < cx0 + 16; ix++) {
+			for (int iy = cy0; iy < cy0 + 16; iy++) {
+				for (int iz = cz0; iz < cz0 + 16; iz++) {
+					getGenerator(ix, iy, iz).getPointOf(cube, ix, iy, iz);
+				}
 			}
 		}
-		return getPointOf(meshX, meshY, meshZ);
+		return cube;
 	}
-
+	
+	public TerrainPoint3DProviderCWGInternalsBased getGenerator(int cubeX, int cubeY, int cubeZ) {
+		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
+			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
+				return entry.getValue().getGenerator(cubeX, cubeY, cubeZ);
+			}
+		}
+		return this;
+	}
 	
 	@Override
 	protected void reset(int cubeX, int cubeY, int cubeZ) {
@@ -116,5 +128,15 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 		end.setPos(x+1, y+1, z+1);
 		terrainBuilder.forEachScaled(start, end, SCALE, noiseConsumer);
 		return noiseConsumer.blockState;
+	}
+
+	@Override
+	protected int getBlockLightAt(int localX, int localY, int localZ) {
+		return 0;
+	}
+
+	@Override
+	protected int getSkyLightAt(int localX, int localY, int localZ) {
+		return 15;
 	}
 }

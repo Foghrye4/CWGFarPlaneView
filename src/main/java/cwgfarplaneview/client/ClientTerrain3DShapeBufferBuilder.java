@@ -1,12 +1,16 @@
 package cwgfarplaneview.client;
 
-import static cwgfarplaneview.util.TerrainConfig.*;
+import static cwgfarplaneview.util.TerrainConfig.CUBE_SIZE_BIT_MESH;
 import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_HORIZONTAL;
+import static cwgfarplaneview.util.TerrainConfig.VOLUMETRIC_VERTICAL;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.lwjgl.opengl.GL11;
 
+import cwgfarplaneview.util.TerrainConfig;
+import cwgfarplaneview.world.terrain.volumetric.TerrainCube;
 import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import io.github.opencubicchunks.cubicchunks.api.util.XYZMap;
 import net.minecraft.client.Minecraft;
@@ -16,6 +20,7 @@ import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.WorldVertexBufferUploader;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexFormat;
+import net.minecraft.init.Blocks;
 
 public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 
@@ -26,8 +31,9 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
-	private final XYZMap<TerrainPoint3D> terrainMap = new XYZMap<TerrainPoint3D>(0.8f, 8000);
+	private final XYZMap<TerrainCube> terrainMap = new XYZMap<TerrainCube>(0.8f, 8000);
 	private final ConcurrentLinkedQueue<TerrainPoint3D[]> pendingTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D[]>();
+	private final ConcurrentLinkedQueue<TerrainCube> pendingTerrainCubesUpdate = new ConcurrentLinkedQueue<TerrainCube>();
 	private final TerrainPoint3D[][][] terrainPointsCache = new TerrainPoint3D[4][4][4];
 	private final MutableWeightedNormal[][][] normalsCache = new MutableWeightedNormal[4][4][4];
 
@@ -46,15 +52,24 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	public ClientTerrain3DShapeBufferBuilder() {
 		for (int ix = 0; ix < 4; ix++)
 			for (int iy = 0; iy < 4; iy++)
-				for (int iz = 0; iz < 4; iz++)
+				for (int iz = 0; iz < 4; iz++) {
 					normalsCache[ix][iy][iz] = new MutableWeightedNormal();
+					terrainPointsCache[ix][iy][iz] = new TerrainPoint3D();
+				}
 	}
 
 	private void addTriangles(BufferBuilder worldRendererIn, int x, int y, int z) {
 		for (int ix = 0; ix < 4; ix++)
 			for (int iy = 0; iy < 4; iy++)
 				for (int iz = 0; iz < 4; iz++) {
-					terrainPointsCache[ix][iy][iz] = terrainMap.get(x-1+ix, y-1+iy, z-1+iz);
+					int x0 = x-1+ix;
+					int y0 = y-1+iy;
+					int z0 = z-1+iz;
+					TerrainCube cube = terrainMap.get(TerrainConfig.meshToCube(x0), TerrainConfig.meshToCube(y0), TerrainConfig.meshToCube(z0));
+					if (cube != null)
+						cube.getTerrainPoint(terrainPointsCache[ix][iy][iz], x0, y0, z0);
+					else
+						terrainPointsCache[ix][iy][iz].blockState = Blocks.AIR.getDefaultState();
 					normalsCache[ix][iy][iz].reset();
 				}
 		for (int ix = 0; ix < 3; ix++)
@@ -109,6 +124,9 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 			for (TerrainPoint3D[] points : pendingTerrainPointsUpdate) {
 				this.addToMap(points);
 			}
+			for (TerrainCube cube : pendingTerrainCubesUpdate) {
+				this.addToMap(cube);
+			}
 			if (isDrawning) {
 				buffer.finishDrawing();
 			}
@@ -153,6 +171,30 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 		}
 	}
 
+	private void addToMap(TerrainCube cube) {
+		terrainMap.put(cube);
+		int minX = cube.x << CUBE_SIZE_BIT_MESH;
+		int minY = cube.y << CUBE_SIZE_BIT_MESH;
+		int minZ = cube.z << CUBE_SIZE_BIT_MESH;
+		
+		int maxX = minX + 15;
+		int maxY = minY + 15;
+		int maxZ = minZ + 15;
+		
+		if (minX < this.minimalXMesh)
+			this.minimalXMesh = minX;
+		if (minY < this.minimalYMesh)
+			this.minimalYMesh = minY;
+		if (minZ < this.minimalZMesh)
+			this.minimalZMesh = minZ;
+		if (maxX > this.maximalXMesh)
+			this.maximalXMesh = maxX;
+		if (maxY > this.maximalYMesh)
+			this.maximalYMesh = maxY;
+		if (maxZ > this.maximalZMesh)
+			this.maximalZMesh = maxZ;
+	}
+
 	public void draw(int terrainDisplayList) {
 		if (!this.isDrawning) {
 			return;
@@ -172,9 +214,27 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 		}
 	}
 
+	public void schleduleAddToMap(TerrainCube cube) {
+		pendingTerrainCubesUpdate.add(cube);
+		synchronized (lock) {
+			lock.notify();
+		}
+	}
+
 	public void addToMap(TerrainPoint3D[] tps) {
 		for (TerrainPoint3D tp : tps) {
-			terrainMap.put(tp);
+			int cubeX = tp.meshX>>4;
+			int cubeY = tp.meshY>>4;
+			int cubeZ = tp.meshZ>>4;
+			TerrainCube cube = terrainMap.get(cubeX, cubeY, cubeZ);
+			if(cube==null) {
+				cube = new TerrainCube(Minecraft.getMinecraft().world, cubeX, cubeY, cubeZ);
+				terrainMap.put(cube);
+			}
+			cube.setBlock(tp.meshX, tp.meshY, tp.meshZ, tp.blockState);
+			cube.biomeData.set(tp.meshX, tp.meshY, tp.meshZ, tp.getBiome());
+			cube.setBlockLight(tp.meshX, tp.meshY, tp.meshZ, tp.blockLight);
+			cube.setSkyLight(tp.meshX, tp.meshY, tp.meshZ, tp.skyLight);
 			if (tp.getX() < this.minimalXMesh)
 				this.minimalXMesh = tp.getX();
 			if (tp.getY() < this.minimalYMesh)

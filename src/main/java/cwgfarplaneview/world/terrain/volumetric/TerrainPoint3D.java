@@ -4,7 +4,7 @@ import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.util.XYZAddressable;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
+import net.minecraft.init.Biomes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.registries.GameData;
@@ -19,8 +19,10 @@ public class TerrainPoint3D implements XYZAddressable {
 	public byte blockLight = 0;
 	public byte skyLight = -1;
 	public IBlockState blockState;
-	public Biome biome;
+	private Biome biome = Biomes.PLAINS;
 
+	public TerrainPoint3D() {}
+	
 	public TerrainPoint3D(int x, int y, int z, byte localX, byte localY, byte localZ, int blockStateIDIn, int biomeId) throws IncorrectTerrainDataException {
 		this(x, y, z, localX, localY, localZ, GameData.getBlockStateIDMap().getByValue(blockStateIDIn), Biome.getBiome(biomeId));
 	}
@@ -39,8 +41,6 @@ public class TerrainPoint3D implements XYZAddressable {
 		if (biome == null)
 			throw new IncorrectTerrainDataException("Biome is NULL");
 	}
-
-	@Override
 	public int getX() {
 		return meshX;
 	}
@@ -53,6 +53,16 @@ public class TerrainPoint3D implements XYZAddressable {
 	@Override
 	public int getZ() {
 		return meshZ;
+	}
+	
+	public Biome getBiome() {
+		return biome;
+	}
+
+	public void setBiome(Biome biomeIn) {
+		if (biomeIn == null)
+			throw new NullPointerException();
+		biome = biomeIn;
 	}
 
 	public NBTTagCompound toNBT() {

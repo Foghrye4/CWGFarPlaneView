@@ -4,14 +4,11 @@ import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_BLOCKS;
 
 import cwgfarplaneview.CWGFarPlaneViewMod;
 import cwgfarplaneview.ClientProxy;
-import cwgfarplaneview.util.FPVMathUtil;
 import cwgfarplaneview.util.TerrainUtil;
 import cwgfarplaneview.util.Vec3f;
 import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
-import io.github.opencubicchunks.cubicchunks.api.util.MathUtil;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3i;
 
 /** Not a parallel thread safe */
 public class CubeRenderer {
@@ -484,6 +481,9 @@ public class CubeRenderer {
 	}
 	
 	private static void addVector(BufferBuilder worldRendererIn, TerrainPoint3D point, float nx,float ny, float nz, float u, float v) {
+		if (point.getBiome() == null)
+			throw new NullPointerException("Biome cannot be null!");
+
 		int bx = (point.meshX << MESH_SIZE_BIT_BLOCKS) + point.localX;
 		int by = (point.meshY << MESH_SIZE_BIT_BLOCKS) + point.localY;
 		int bz = (point.meshZ << MESH_SIZE_BIT_BLOCKS) + point.localZ;
@@ -495,7 +495,7 @@ public class CubeRenderer {
 
 		BlockPos pos = new BlockPos(bx, by, bz);
 		ClientProxy cp = (ClientProxy) CWGFarPlaneViewMod.proxy;
-		int color = cp.blockColors.getBlockColor(point.blockState, point.biome, pos, ny);
+		int color = cp.blockColors.getBlockColor(point.blockState, point.getBiome(), pos, ny);
 		float red = (color >> 16 & 255) / 256f;
 		float green = (color >> 8 & 255) / 256f;
 		float blue = (color & 255) / 256f;

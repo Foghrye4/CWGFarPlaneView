@@ -1,11 +1,11 @@
 package cwgfarplaneview.core;
 
+import static cwgfarplaneview.core.GenLayerClassVisitor.INT_CACHE_FIELD_NAME;
+
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import static cwgfarplaneview.core.GenLayerClassVisitor.*;
 
 public class GenLayerChildClassVisitor extends ClassVisitor {
 

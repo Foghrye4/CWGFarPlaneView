@@ -5,54 +5,67 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.save.SaveSection3D;
 import cwgfarplaneview.util.DiskDataUtil;
+import cwgfarplaneview.util.NBTUtil;
 import cwgfarplaneview.util.TerrainConfig;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
-import net.minecraft.block.Block;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.NibbleArray;
+import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.common.util.Constants;
 
 public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 	private SaveSection3D cubeIO;
 	private ExtendedBlockStorage cachedStorage;
+	private final TerrainPoint3DProviderCWGInternalsBased fallBackProvider;
 
-	public TerrainPoint3DProviderDiskData(WorldServer worldIn) {
+	public TerrainPoint3DProviderDiskData(WorldServer worldIn, BiomeProvider biomeProvider,
+			CustomGeneratorSettings settings, final long seed) {
 		super(worldIn);
+		fallBackProvider = new TerrainPoint3DProviderCWGInternalsBased(worldIn, biomeProvider, settings, seed);
 		cubeIO = DiskDataUtil.createCubeIO(worldIn);
 	}
 
 	@Override
-	public TerrainPoint3D getTerrainPointAt(int meshX, int meshY, int meshZ) throws IncorrectTerrainDataException {
-		int cubeX = meshX << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		int cubeZ = meshZ << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		int cubeY = meshY << TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		EntryLocation3D ebsKey = new EntryLocation3D(cubeX, cubeY, cubeZ);
-		Optional<ByteBuffer> buf;
-		try {
-			buf = cubeIO.load(ebsKey, false);
-			if (!buf.isPresent()) {
-				return null;
+	public TerrainCube getTerrainCubeAt(@Nullable TerrainCube cube, int tcX, int tcY, int tcZ) throws IncorrectTerrainDataException {
+		if (cube == null)
+			cube = new TerrainCube(world, tcX, tcY, tcZ);
+		int cx0 = tcX << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cy0 = tcY << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		int cz0 = tcZ << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		for (int ix = cx0; ix < cx0 + 16; ix++) {
+			for (int iy = cy0; iy < cy0 + 16; iy++) {
+				next_cube:for (int iz = cz0; iz < cz0 + 16; iz++) {
+					EntryLocation3D ebsKey = new EntryLocation3D(ix, iy, iz);
+					Optional<ByteBuffer> buf;
+					try {
+						buf = cubeIO.load(ebsKey, false);
+						if (!buf.isPresent()) {
+							fallBackProvider.getGenerator(ix, iy, iz).getPointOf(cube, ix, iy, iz);
+							continue next_cube;
+						}
+						NBTTagCompound nbt = CompressedStreamTools.readCompressed(new ByteArrayInputStream(buf.get().array()))
+								.getCompoundTag("Level");
+						cachedStorage = readBlocks(nbt, world);
+					} catch (IOException e) {
+						e.printStackTrace();
+						fallBackProvider.getGenerator(ix, iy, iz).getPointOf(cube, ix, iy, iz);
+						continue next_cube;
+					}
+					this.getPointOf(cube, ix, iy, iz);
+				}
 			}
-			NBTTagCompound nbt = CompressedStreamTools.readCompressed(new ByteArrayInputStream(buf.get().array()))
-					.getCompoundTag("Level");
-			cachedStorage = readBlocks(nbt, world);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
 		}
-		TerrainPoint3D tp = getPointOf(meshX, meshY, meshZ);
-		tp.blockLight = (byte) cachedStorage.getBlockLight(tp.localX, tp.localY, tp.localZ);
-		tp.skyLight = (byte) cachedStorage.getSkyLight(tp.localX, tp.localY, tp.localZ);
-		return tp;
+		return cube;
 	}
 	
 	@Override
@@ -62,36 +75,24 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 	protected IBlockState getBlockStateAt(int x, int y, int z) {
 		return cachedStorage.get(x & 15, y & 15, z & 15);
 	}
+	
+	@Override
+	protected int getBlockLightAt(int localX, int localY, int localZ) {
+		return cachedStorage.getBlockLight(localX & 15, localY & 15, localZ & 15);
+	}
 
-	@SuppressWarnings("deprecation")
+	@Override
+	protected int getSkyLightAt(int localX, int localY, int localZ) {
+		return cachedStorage.getSkyLight(localX & 15, localY & 15, localZ & 15);
+	}
+
 	private ExtendedBlockStorage readBlocks(NBTTagCompound nbt, World world) {
 		ExtendedBlockStorage ebs = new ExtendedBlockStorage(0, true);
-		boolean isEmpty = !nbt.hasKey("Sections");// is this an empty cube?
-		if (!isEmpty) {
+		if (nbt.hasKey("Sections")) {
 			NBTTagList sectionList = nbt.getTagList("Sections", 10);
-			nbt = sectionList.getCompoundTagAt(0);
-
-			byte[] abyte = nbt.getByteArray("Blocks");
-			NibbleArray data = new NibbleArray(nbt.getByteArray("Data"));
-			NibbleArray add = nbt.hasKey("Add", Constants.NBT.TAG_BYTE_ARRAY) ? new NibbleArray(nbt.getByteArray("Add"))
-					: null;
-			NibbleArray add2neid = nbt.hasKey("Add2", Constants.NBT.TAG_BYTE_ARRAY)
-					? new NibbleArray(nbt.getByteArray("Add2"))
-					: null;
-
-			for (int i = 0; i < 4096; i++) {
-				int x = i & 15;
-				int y = i >> 8 & 15;
-				int z = i >> 4 & 15;
-
-				int toAdd = add == null ? 0 : add.getFromIndex(i);
-				toAdd = (toAdd & 0xF) | (add2neid == null ? 0 : add2neid.getFromIndex(i) << 4);
-				int id = (toAdd << 12) | ((abyte[i] & 0xFF) << 4) | data.getFromIndex(i);
-				ebs.getData().set(x, y, z, Block.BLOCK_STATE_IDS.getByValue(id));
-			}
-            ebs.setBlockLight(new NibbleArray(nbt.getByteArray("BlockLight")));
-            ebs.setSkyLight(new NibbleArray(nbt.getByteArray("SkyLight")));
+			NBTUtil.readEBS(ebs, sectionList.getCompoundTagAt(0));
 		}
 		return ebs;
 	}
+
 }
