@@ -44,14 +44,14 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 		int cz0 = tcZ << TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		for (int ix = cx0; ix < cx0 + 16; ix++) {
 			for (int iy = cy0; iy < cy0 + 16; iy++) {
-				next_cube:for (int iz = cz0; iz < cz0 + 16; iz++) {
+				for (int iz = cz0; iz < cz0 + 16; iz++) {
 					EntryLocation3D ebsKey = new EntryLocation3D(ix, iy, iz);
 					Optional<ByteBuffer> buf;
 					try {
 						buf = cubeIO.load(ebsKey, false);
 						if (!buf.isPresent()) {
 							fallBackProvider.getGenerator(ix, iy, iz).getPointOf(cube, ix, iy, iz);
-							continue next_cube;
+							continue;
 						}
 						NBTTagCompound nbt = CompressedStreamTools.readCompressed(new ByteArrayInputStream(buf.get().array()))
 								.getCompoundTag("Level");
@@ -59,7 +59,7 @@ public class TerrainPoint3DProviderDiskData extends TerrainPoint3DProvider {
 					} catch (IOException e) {
 						e.printStackTrace();
 						fallBackProvider.getGenerator(ix, iy, iz).getPointOf(cube, ix, iy, iz);
-						continue next_cube;
+						continue;
 					}
 					this.getPointOf(cube, ix, iy, iz);
 				}

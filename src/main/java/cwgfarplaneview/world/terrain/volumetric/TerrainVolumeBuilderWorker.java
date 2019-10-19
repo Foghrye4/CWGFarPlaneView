@@ -25,7 +25,7 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	private EntityPlayerMP player;
 	private final WorldServer world;
 	private WorldSavedDataTerrainSurface3d data;
-	private TerrainPoint3DProviderCWGInternalsBased tpProvider;
+	private TerrainPoint3DProviderDiskData tpProvider;
 	public final ConcurrentLinkedQueue<TerrainPoint3D> offthreadTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D>();
 	
 	private volatile boolean run = true;
@@ -41,7 +41,7 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	public TerrainVolumeBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
 		world = worldServerIn;
-		tpProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
+		tpProvider = new TerrainPoint3DProviderDiskData(world, world.getBiomeProvider(),
 				CustomGeneratorSettings.load(world), world.getSeed());
 		minimalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		minimalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
@@ -73,24 +73,24 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 		}
 		if (closestSide.getAxis() == Axis.X) {
 			int x = closestSide == EnumFacing.EAST ? ++maximalX : --minimalX;
-			for (int y = minimalY; y <= maximalY; y++) {
-				for (int z = minimalZ; z <= maximalZ; z++) {
+			for (int y = minimalY; y <= maximalY && run; y++) {
+				for (int z = minimalZ; z <= maximalZ && run; z++) {
 					cube = this.addCubeAt(x, y, z);
 					network.sendTerrainCubeToPlayer(player, cube);
 				}
 			}
 		} else if (closestSide.getAxis() == Axis.Z) {
 			int z = closestSide == EnumFacing.SOUTH ? ++maximalZ : --minimalZ;
-			for (int y = minimalY; y <= maximalY; y++) {
-				for (int x = minimalX; x <= maximalX; x++) {
+			for (int y = minimalY; y <= maximalY && run; y++) {
+				for (int x = minimalX; x <= maximalX && run; x++) {
 					cube = this.addCubeAt(x, y, z);
 					network.sendTerrainCubeToPlayer(player, cube);
 				}
 			}
 		} else if (closestSide.getAxis() == Axis.Y) {
 			int y = closestSide == EnumFacing.UP ? ++maximalY : --minimalY;
-			for (int z = minimalZ; z <= maximalZ; z++) {
-				for (int x = minimalX; x <= maximalX; x++) {
+			for (int z = minimalZ; z <= maximalZ && run; z++) {
+				for (int x = minimalX; x <= maximalX && run; x++) {
 					cube = this.addCubeAt(x, y, z);
 					network.sendTerrainCubeToPlayer(player, cube);
 				}
@@ -128,32 +128,31 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	}
 
 	private EnumFacing getSideClosestToPlayer(int px, int py, int pz) {
-		int minXZ = Integer.MAX_VALUE;
-		int minY = Integer.MAX_VALUE;
+		int minXYZ = Integer.MAX_VALUE;
 		EnumFacing closestSide = null;
-		if (maximalX - px < minXZ && maximalX - px < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXZ = maximalX - px;
+		if (maximalX - px < minXYZ && maximalX - px < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXYZ = maximalX - px;
 			closestSide = EnumFacing.EAST;
 		}
-		if (maximalY - py < minY && maximalY - py < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
-			minY = maximalY - py;
-			closestSide = EnumFacing.UP;
-		}
-		if (maximalZ - pz < minXZ && maximalZ - pz < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXZ = maximalZ - pz;
+		if (maximalZ - pz < minXYZ && maximalZ - pz < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXYZ = maximalZ - pz;
 			closestSide = EnumFacing.SOUTH;
 		}
-		if (px - minimalX < minXZ && px - minimalX < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXZ = px - minimalX;
+		if (px - minimalX < minXYZ && px - minimalX < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXYZ = px - minimalX;
 			closestSide = EnumFacing.WEST;
 		}
-		if (py - minimalY < minY && py - minimalY < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
-			minY = py - minimalY;
+		if (pz - minimalZ < minXYZ && pz - minimalZ < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
+			minXYZ = px - minimalZ;
+			closestSide = EnumFacing.NORTH;
+		}
+		if (py - minimalY < minXYZ && py - minimalY < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
+			minXYZ = py - minimalY;
 			closestSide = EnumFacing.DOWN;
 		}
-		if (pz - minimalZ < minXZ && pz - minimalZ < VOLUMETRIC_HORIZONTAL.maxUpdateDistanceChunks) {
-			minXZ = px - minimalZ;
-			closestSide = EnumFacing.NORTH;
+		if (maximalY - py < minXYZ && maximalY - py < VOLUMETRIC_VERTICAL.maxUpdateDistanceChunks) {
+			minXYZ = maximalY - py;
+			closestSide = EnumFacing.UP;
 		}
 		return closestSide;
 	}
@@ -173,9 +172,9 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 			while (run && !player.isDead) {
 				tick();
 			}
-			logger.info("Finishing terrain builder thread");
+			logger.info("Finishing 3D terrain builder thread");
 			data.save(world);
-			logger.info("Terrain data saved");
+			logger.info("3D Terrain data saved");
 		} catch (IncorrectTerrainDataException | ReportedException | InterruptedException e) {
 			logger.catching(e);
 		} finally {
@@ -185,9 +184,14 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	}
 
 	public void stop() {
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		run = false;
 	}
 
+	public boolean canRun() {
+		return run;
+	}
+	
 	public World getWorld() {
 		return world;
 	}

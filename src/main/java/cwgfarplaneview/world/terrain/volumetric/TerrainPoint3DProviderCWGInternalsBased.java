@@ -43,7 +43,7 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 			CustomGeneratorSettings settings, final long seed) {
 		super(worldIn);
 		this.conf = settings;
-		this.biomeSource = new CachedRoughBiomeSource(world, conf.createBiomeBlockReplacerConfig(), biomeProvider, 2);
+		this.biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), biomeProvider, 2);
 		this.noiseConsumer = new Cell3DNoiseConsumer(biomeSource);
 		initGenerator(seed);
 

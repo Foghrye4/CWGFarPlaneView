@@ -52,7 +52,7 @@ public class WorldSavedDataTerrainSurface3d {
 	public NBTTagCompound writeToNBT(NBTTagCompound compound) {
 		synchronized (lock) {
 			NBTTagList list = new NBTTagList();
-			for (TerrainCube cube : getTerrainMap()) {
+			for (TerrainCube cube : terrainMap) {
 				list.appendTag(cube.toNBT());
 			}
 			compound.setTag("terrainCubeMap", list);
@@ -99,19 +99,19 @@ public class WorldSavedDataTerrainSurface3d {
 
 	public void clear() {
 		synchronized (lock) {
-			getTerrainMap().clear();
+			terrainMap.clear();
 		}
 	}
 
 	public TerrainCube get(int x, int y, int z) {
 		synchronized (lock) {
-			return getTerrainMap().get(x, y, z);
+			return terrainMap.get(x, y, z);
 		}
 	}
 
-	public XYZMap<TerrainCube> getTerrainMap() {
+	public void removeFromMap(int x, int y, int z) {
 		synchronized (lock) {
-			return terrainMap;
+			terrainMap.remove(x, y, z);
 		}
 	}
 }

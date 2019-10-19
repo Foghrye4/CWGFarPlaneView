@@ -5,8 +5,10 @@ import static cwgfarplaneview.CWGFarPlaneViewMod.network;
 import java.util.HashSet;
 import java.util.Set;
 
+import cwgfarplaneview.world.storage.WorldSavedDataTerrainSurface3d;
 import cwgfarplaneview.world.terrain.flat.TerrainSurfaceBuilderWorker;
 import cwgfarplaneview.world.terrain.volumetric.TerrainVolumeBuilderWorker;
+import static cwgfarplaneview.util.TerrainConfig.*;
 import io.github.opencubicchunks.cubicchunks.api.world.CubeUnWatchEvent;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -63,7 +65,19 @@ public class CWGFarPlaneViewEventHandler {
 		World world = (World) event.getWorld();
 		if (!isRenderableWorld(world))
 			return;
-//		WorldSavedDataTerrainSurface3d data = WorldSavedDataTerrainSurface3d.getOrCreateWorldSavedData(world);
+		boolean canRun = false;
+		for (TerrainVolumeBuilderWorker worker : volumeWorkers) {
+			if (worker.canRun() && worker.getWorld() == world) {
+				canRun = true;
+			}
+		}
+		if(canRun) {
+			WorldSavedDataTerrainSurface3d data = WorldSavedDataTerrainSurface3d.getOrCreateWorldSavedData(world);
+			int x = event.getCubePos().getX() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
+			int y = event.getCubePos().getY() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
+			int z = event.getCubePos().getZ() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
+			data.removeFromMap(x,y,z);
+		}
 	}
 
 	private boolean isRenderableWorld(World world) {

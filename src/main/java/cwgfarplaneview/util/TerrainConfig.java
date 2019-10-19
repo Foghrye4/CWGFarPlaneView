@@ -18,7 +18,7 @@ public class TerrainConfig {
 	public float farPlane = horizontDistanceBlocks * 2;
 	
 	public void setMaxUpdateDistance(int maxUpdateDistance) {
-		maxUpdateDistanceCells = maxUpdateDistance;
+		maxUpdateDistanceCells = maxUpdateDistance << CUBE_SIZE_BIT_MESH;
 		maxUpdateDistanceChunks = maxUpdateDistanceCells << MESH_SIZE_BIT_CHUNKS;
 		horizontDistanceChunks = maxUpdateDistanceChunks - (32 << MESH_SIZE_BIT_CHUNKS);
 		horizontDistanceBlocks = horizontDistanceChunks << 4;
