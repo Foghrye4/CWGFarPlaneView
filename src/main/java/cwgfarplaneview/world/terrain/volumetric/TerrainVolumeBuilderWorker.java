@@ -30,25 +30,20 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	
 	private volatile boolean run = true;
 	public volatile boolean dumpProgressInfo = false;
-	public int minimalX;
-	public int minimalY;
-	public int minimalZ;
-	public int maximalX;
-	public int maximalY;
-	public int maximalZ;
+	public int minimalX = Integer.MAX_VALUE;
+	public int minimalY = Integer.MAX_VALUE;
+	public int minimalZ = Integer.MAX_VALUE;
+	public int maximalX = Integer.MAX_VALUE;
+	public int maximalY = Integer.MAX_VALUE;
+	public int maximalZ = Integer.MAX_VALUE;
 	private final Object lock = new Object();
+	private Thread thread;
 
 	public TerrainVolumeBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
 		world = worldServerIn;
 		tpProvider = new TerrainPoint3DProviderDiskData(world, world.getBiomeProvider(),
 				CustomGeneratorSettings.load(world), world.getSeed());
-		minimalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		minimalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		minimalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		maximalX = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		maximalY = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-		maximalZ = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		logger.debug("3D builder worker for player " + player.getName() + " initialized.");
 	}
 
@@ -56,10 +51,12 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 		int px = player.chunkCoordX >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		int py = player.chunkCoordY >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
 		int pz = player.chunkCoordZ >> TerrainConfig.CUBE_SIZE_BIT_MESH + TerrainConfig.MESH_SIZE_BIT_CHUNKS;
+		TerrainCube cube = null;
 		if (px < minimalX || px > maximalX || py < minimalY || py > maximalY || pz < minimalZ || pz > maximalZ) {
 			reset();
+			cube = this.addCubeAt(px, py, pz);
+			network.sendTerrainCubeToPlayer(player, cube);
 		}
-		TerrainCube cube = null;
 		EnumFacing closestSide = getSideClosestToPlayer(px, py, pz);
 		if (closestSide == null) {
 			try {
@@ -184,7 +181,7 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	}
 
 	public void stop() {
-		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+		thread.setPriority(Thread.MAX_PRIORITY);
 		run = false;
 	}
 
@@ -194,5 +191,13 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	
 	public World getWorld() {
 		return world;
+	}
+
+	public void setThread(Thread threadIn) {
+		thread = threadIn;
+	}
+
+	public void setPriority(int newPriority) {
+		thread.setPriority(newPriority);
 	}
 }

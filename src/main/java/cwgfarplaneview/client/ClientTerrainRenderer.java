@@ -117,9 +117,8 @@ public class ClientTerrainRenderer extends IRenderHandler {
 			compileSurfaceDisplayList(world);
 			terrainSurfaceRenderWorker.ready = false;
 		}
-		if (terrain3DShapeRenderWorker.ready && terrain3DShapeRenderWorker.isDrawning) {
+		if (terrain3DShapeRenderWorker.ready) {
 			compileVolumetricDisplayList(world);
-			terrain3DShapeRenderWorker.ready = false;
 		}
 		if (FLAT.maxUpdateDistanceCells > 0)
 			GL11.glCallList(this.terrainSurfaceDisplayList);

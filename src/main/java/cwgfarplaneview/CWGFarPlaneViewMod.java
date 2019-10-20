@@ -17,7 +17,7 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 public class CWGFarPlaneViewMod {
 	public static final String MODID = "cwgfarplaneview";
 	public static final String NAME = "CWG Far plane view";
-	public static final String VERSION = "0.3.0	";
+	public static final String VERSION = "0.3.1";
 	public static final String DEPENCIES = "required:cubicchunks@[0.0.951.0,);required:cubicgen@[0.0.54.0,);required:forge@[14.23.3.2658,)";
 	public static final String GUI_FACTORY = "cwgfarplaneview.client.gui.GuiFactory";
 

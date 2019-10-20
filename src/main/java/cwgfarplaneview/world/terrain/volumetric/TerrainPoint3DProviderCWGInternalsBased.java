@@ -9,7 +9,6 @@ import java.util.function.ToIntFunction;
 import javax.annotation.Nullable;
 
 import cwgfarplaneview.util.TerrainConfig;
-import cwgfarplaneview.world.biome.CachedRoughBiomeSource;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;

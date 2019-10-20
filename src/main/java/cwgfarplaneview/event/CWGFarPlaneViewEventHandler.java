@@ -41,6 +41,7 @@ public class CWGFarPlaneViewEventHandler {
 		volumeWorkers.add(volumetricWorker);
 		Thread thread2 = new Thread(volumetricWorker, player.getName() + "'s terrain volumetric builder worker");
 		thread2.setPriority(Thread.MIN_PRIORITY);
+		volumetricWorker.setThread(thread2);
 		thread2.start();
 	}
 
@@ -98,5 +99,11 @@ public class CWGFarPlaneViewEventHandler {
 		}
 		for (TerrainVolumeBuilderWorker worker : volumeWorkers)
 			worker.dumpProgressInfo = true;
+	}
+
+	public void setPriority(int priorityIn) {
+		for (TerrainVolumeBuilderWorker worker : volumeWorkers) {
+			worker.setPriority(priorityIn);
+		}
 	}
 }

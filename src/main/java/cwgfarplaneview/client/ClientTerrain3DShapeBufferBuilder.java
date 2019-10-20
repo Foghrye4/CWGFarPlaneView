@@ -32,7 +32,6 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	private final BufferBuilder buffer = new BufferBuilder(2097152);
 	private final WorldVertexBufferUploader vboUploader = new WorldVertexBufferUploader();
 	private final XYZMap<TerrainCube> terrainMap = new XYZMap<TerrainCube>(0.8f, 8000);
-	private final ConcurrentLinkedQueue<TerrainPoint3D[]> pendingTerrainPointsUpdate = new ConcurrentLinkedQueue<TerrainPoint3D[]>();
 	private final ConcurrentLinkedQueue<TerrainCube> pendingTerrainCubesUpdate = new ConcurrentLinkedQueue<TerrainCube>();
 	private final TerrainPoint3D[][][] terrainPointsCache = new TerrainPoint3D[4][4][4];
 	private final MutableWeightedNormal[][][] normalsCache = new MutableWeightedNormal[4][4][4];
@@ -43,7 +42,6 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	int maximalXMesh = 4;
 	int maximalYMesh = 4;
 	int maximalZMesh = 4;
-	volatile boolean isDrawning = false;
 	volatile public boolean ready = false;
 	volatile public boolean run = true;
 
@@ -121,48 +119,50 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	public void run() {
 		while (run) {
 			ready = false;
-			for (TerrainPoint3D[] points : pendingTerrainPointsUpdate) {
-				this.addToMap(points);
+			if(pendingTerrainCubesUpdate.isEmpty()) {
+				synchronized (lock) {
+					try {
+						lock.wait(2500);
+					} catch (InterruptedException e) {
+					}
+				}
+				continue;
 			}
 			for (TerrainCube cube : pendingTerrainCubesUpdate) {
 				this.addToMap(cube);
 			}
-			if (isDrawning) {
-				buffer.finishDrawing();
-			}
-			isDrawning = true;
-			buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
-			int x0 = minimalXMesh;
-			int x1 = maximalXMesh;
-			int y0 = minimalYMesh;
-			int y1 = maximalYMesh;
-			int z0 = minimalZMesh;
-			int z1 = maximalZMesh;
-			EntityPlayerSP player = Minecraft.getMinecraft().player;
-			if (player != null) {
-				int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
-				int pmccy = player.chunkCoordY >> MESH_SIZE_BIT_CHUNKS;
-				int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
-				x0 = Math.max(x0, pmccx - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
-				x1 = Math.min(x1, pmccx + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
-				y0 = Math.max(y0, pmccy - VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
-				y1 = Math.min(y1, pmccy + VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
-				z0 = Math.max(z0, pmccz - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
-				z1 = Math.min(z1, pmccz + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
-			}
-			a: for (int x = x0; x <= x1; x++) {
-				for (int y = y0; y <= y1; y++) {
-					for (int z = z0; z <= z1; z++) {
-						WorldClient world = Minecraft.getMinecraft().world;
-						if (world == null) {
-							break a;
+			synchronized (lock) {
+				buffer.begin(GL11.GL_TRIANGLES, VERTEX_FORMAT);
+				int x0 = minimalXMesh;
+				int x1 = maximalXMesh;
+				int y0 = minimalYMesh;
+				int y1 = maximalYMesh;
+				int z0 = minimalZMesh;
+				int z1 = maximalZMesh;
+				EntityPlayerSP player = Minecraft.getMinecraft().player;
+				if (player != null) {
+					int pmccx = player.chunkCoordX >> MESH_SIZE_BIT_CHUNKS;
+					int pmccy = player.chunkCoordY >> MESH_SIZE_BIT_CHUNKS;
+					int pmccz = player.chunkCoordZ >> MESH_SIZE_BIT_CHUNKS;
+					x0 = Math.max(x0, pmccx - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+					x1 = Math.min(x1, pmccx + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+					y0 = Math.max(y0, pmccy - VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
+					y1 = Math.min(y1, pmccy + VOLUMETRIC_VERTICAL.maxUpdateDistanceCells);
+					z0 = Math.max(z0, pmccz - VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+					z1 = Math.min(z1, pmccz + VOLUMETRIC_HORIZONTAL.maxUpdateDistanceCells);
+				}
+				a: for (int x = x0; x <= x1; x++) {
+					for (int y = y0; y <= y1; y++) {
+						for (int z = z0; z <= z1; z++) {
+							WorldClient world = Minecraft.getMinecraft().world;
+							if (world == null) {
+								break a;
+							}
+							this.addTriangles(buffer, x, y, z);
 						}
-						this.addTriangles(buffer, x, y, z);
 					}
 				}
-			}
-			ready = true;
-			synchronized (lock) {
+				ready = true;
 				try {
 					lock.wait();
 				} catch (InterruptedException e) {
@@ -196,58 +196,21 @@ public class ClientTerrain3DShapeBufferBuilder implements Runnable {
 	}
 
 	public void draw(int terrainDisplayList) {
-		if (!this.isDrawning) {
+		if (!this.ready) {
 			return;
 		}
-		GL11.glNewList(terrainDisplayList, 4864);
-		this.buffer.finishDrawing();
-		this.isDrawning = false;
-		this.ready = false;
-		this.vboUploader.draw(this.buffer);
-		GL11.glEndList();
-	}
-
-	public void schleduleAddToMap(TerrainPoint3D[] tps) {
-		this.pendingTerrainPointsUpdate.add(tps);
 		synchronized (lock) {
+			GL11.glNewList(terrainDisplayList, 4864);
+			this.buffer.finishDrawing();
+			this.ready = false;
+			this.vboUploader.draw(this.buffer);
+			GL11.glEndList();
 			lock.notify();
 		}
 	}
 
 	public void schleduleAddToMap(TerrainCube cube) {
 		pendingTerrainCubesUpdate.add(cube);
-		synchronized (lock) {
-			lock.notify();
-		}
-	}
-
-	public void addToMap(TerrainPoint3D[] tps) {
-		for (TerrainPoint3D tp : tps) {
-			int cubeX = tp.meshX>>4;
-			int cubeY = tp.meshY>>4;
-			int cubeZ = tp.meshZ>>4;
-			TerrainCube cube = terrainMap.get(cubeX, cubeY, cubeZ);
-			if(cube==null) {
-				cube = new TerrainCube(Minecraft.getMinecraft().world, cubeX, cubeY, cubeZ);
-				terrainMap.put(cube);
-			}
-			cube.setBlock(tp.meshX, tp.meshY, tp.meshZ, tp.blockState);
-			cube.biomeData.set(tp.meshX, tp.meshY, tp.meshZ, tp.getBiome());
-			cube.setBlockLight(tp.meshX, tp.meshY, tp.meshZ, tp.blockLight);
-			cube.setSkyLight(tp.meshX, tp.meshY, tp.meshZ, tp.skyLight);
-			if (tp.getX() < this.minimalXMesh)
-				this.minimalXMesh = tp.getX();
-			if (tp.getY() < this.minimalYMesh)
-				this.minimalYMesh = tp.getY();
-			if (tp.getZ() < this.minimalZMesh)
-				this.minimalZMesh = tp.getZ();
-			if (tp.getX() > this.maximalXMesh)
-				this.maximalXMesh = tp.getX();
-			if (tp.getY() > this.maximalYMesh)
-				this.maximalYMesh = tp.getY();
-			if (tp.getZ() > this.maximalZMesh)
-				this.maximalZMesh = tp.getZ();
-		}
 	}
 
 	public void clear() {

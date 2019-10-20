@@ -56,26 +56,6 @@ public class ClientNetworkHandler extends ServerNetworkHandler {
 				((ClientProxy) proxy).terrainRenderer.setSeaLevel(byteBufInputStream.readInt());
 			});
 			break;
-		case RECIEVE_3DTERRAIN_DATA:
-			amount = byteBufInputStream.readInt();
-			TerrainPoint3D[] tps3d = new TerrainPoint3D[amount];
-			for (int i = 0; i < amount; i++) {
-				int cubeX = byteBufInputStream.readInt();
-				int cubeY = byteBufInputStream.readInt();
-				int cubeZ = byteBufInputStream.readInt();
-				byte localX = byteBufInputStream.readByte();
-				byte localY = byteBufInputStream.readByte();
-				byte localZ = byteBufInputStream.readByte();
-				try {
-					tps3d[i] = new TerrainPoint3D(cubeX, cubeY, cubeZ, localX, localY, localZ, byteBufInputStream.readInt(),
-							byteBufInputStream.readInt());
-				} catch (IncorrectTerrainDataException e) {
-					logger.catching(e);
-					break;
-				}
-			}
-			((ClientProxy) proxy).terrainRenderer.terrain3DShapeRenderWorker.schleduleAddToMap(tps3d);
-			break;
 		case RECIEVE_TERRAIN_CUBE:
 			int cubeX = byteBufInputStream.readInt();
 			int cubeY = byteBufInputStream.readInt();
