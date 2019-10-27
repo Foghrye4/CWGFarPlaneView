@@ -1,6 +1,7 @@
 package cwgfarplaneview.util;
 
 import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
@@ -32,6 +33,14 @@ public class NBTUtil {
         ebs.setSkyLight(new NibbleArray(nbt.getByteArray("SkyLight")));
 	}
 	
+	public static void resetEBS(ExtendedBlockStorage ebs) {
+		for (int i = 0; i < 4096; i++) {
+			int x = i & 15;
+			int y = i >> 8 & 15;
+			int z = i >> 4 & 15;
+			ebs.getData().set(x, y, z, Blocks.AIR.getDefaultState());
+		}
+	}
 	
     @SuppressWarnings("deprecation")
 	public static NBTTagCompound writeEBS(ExtendedBlockStorage ebs, NBTTagCompound nbt) {

@@ -9,7 +9,6 @@ import java.io.IOException;
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import cwgfarplaneview.world.terrain.flat.TerrainPoint;
 import cwgfarplaneview.world.terrain.volumetric.TerrainCube;
-import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.block.Block;

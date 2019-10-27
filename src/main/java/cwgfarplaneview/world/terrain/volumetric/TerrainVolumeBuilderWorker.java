@@ -42,8 +42,16 @@ public class TerrainVolumeBuilderWorker implements Runnable {
 	public TerrainVolumeBuilderWorker(EntityPlayerMP playerIn, WorldServer worldServerIn) {
 		player = playerIn;
 		world = worldServerIn;
-		tpProvider = new TerrainPoint3DProviderDiskData(world, world.getBiomeProvider(),
-				CustomGeneratorSettings.load(world), world.getSeed());
+		TerrainPoint3DProviderLayered fallBackProvider = null;
+		if (worldServerIn.getWorldType().getName().equals("CustomCubic")) {
+			fallBackProvider = new TerrainPoint3DProviderCWGInternalsBased(world, world.getBiomeProvider(),
+					CustomGeneratorSettings.load(world), world.getSeed());
+		}
+		else {
+			fallBackProvider = new TerrainPoint3DProviderLoafer(world);
+		}
+		tpProvider = new TerrainPoint3DProviderDiskData(world, fallBackProvider);
+		
 		logger.debug("3D builder worker for player " + player.getName() + " initialized.");
 	}
 

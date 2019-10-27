@@ -102,6 +102,6 @@ public class TerrainPoint3D implements XYZAddressable {
 	}
 
 	public boolean isVisible() {
-		return !TerrainUtil.isAirOrWater(blockState);
+		return !TerrainUtil.shouldBeSkipped(blockState);
 	}
 }

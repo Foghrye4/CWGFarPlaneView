@@ -22,7 +22,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.biome.BiomeProvider;
 
-public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvider {
+public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProviderLayered {
 	private static final int CACHE_SIZE_2D = 16 * 16;
 	private static final int CACHE_SIZE_3D = 16 * 16 * 16;
 	private static final ToIntFunction<Vec3i> HASH_2D = (v) -> v.getX() + v.getZ() * 5;
@@ -106,7 +106,8 @@ public class TerrainPoint3DProviderCWGInternalsBased extends TerrainPoint3DProvi
 		return cube;
 	}
 	
-	public TerrainPoint3DProviderCWGInternalsBased getGenerator(int cubeX, int cubeY, int cubeZ) {
+	@Override
+	public TerrainPoint3DProvider getGenerator(int cubeX, int cubeY, int cubeZ) {
 		for (Entry<IntAABB, TerrainPoint3DProviderCWGInternalsBased> entry : this.areaGenerators.entrySet()) {
 			if (entry.getKey().contains(cubeX, cubeY, cubeZ)) {
 				return entry.getValue().getGenerator(cubeX, cubeY, cubeZ);

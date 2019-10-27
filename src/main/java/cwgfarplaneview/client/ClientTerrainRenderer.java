@@ -108,6 +108,7 @@ public class ClientTerrainRenderer extends IRenderHandler {
 		GL11.glCallList(this.backgroundDisplayList);
 		GL11.glPopMatrix();
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		
 		LightHelper.enableLight(world, partialTicks);
 		
 		// Terrain

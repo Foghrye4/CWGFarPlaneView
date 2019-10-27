@@ -36,8 +36,8 @@ public abstract class TerrainPoint3DProvider {
 		
 		IBlockState bs000 = getBlockStateAt(x0, y0, z0);
 		IBlockState bsfff = getBlockStateAt(x0 + 15, y0 + 15, z0 + 15);
-		boolean t000isAirOrWater = TerrainUtil.isAirOrWater(bs000);
-		boolean tfffisAirOrWater = TerrainUtil.isAirOrWater(bsfff);
+		boolean t000isAirOrWater = TerrainUtil.shouldBeSkipped(bs000);
+		boolean tfffisAirOrWater = TerrainUtil.shouldBeSkipped(bsfff);
 		if(t000isAirOrWater && tfffisAirOrWater) {
 			Biome biome = getBiomeAt(Coords.cubeToMinBlock(cubeX), Coords.cubeToMinBlock(cubeY),
 					Coords.cubeToMinBlock(cubeZ));
@@ -67,17 +67,17 @@ public abstract class TerrainPoint3DProvider {
 			IBlockState bsi = bsfff;
 			while(search) {
 				search = false;
-				if (ix > 0 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix - 1, y0 + iy, z0 + iz))) {
+				if (ix > 0 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix - 1, y0 + iy, z0 + iz))) {
 					ix--;
 					bs = bsi;
 					search = true;
 				}
-				if (iy > 0 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix, y0 + iy - 1, z0 + iz))) {
+				if (iy > 0 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix, y0 + iy - 1, z0 + iz))) {
 					iy--;
 					bs = bsi;
 					search = true;
 				}
-				if (iz > 0 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix, y0 + iy, z0 + iz - 1))) {
+				if (iz > 0 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix, y0 + iy, z0 + iz - 1))) {
 					iz--;
 					bs = bsi;
 					search = true;
@@ -101,17 +101,17 @@ public abstract class TerrainPoint3DProvider {
 			IBlockState bsi = bsfff;
 			while(search) {
 				search = false;
-				if (ix < 15 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix + 1, y0 + iy, z0 + iz))) {
+				if (ix < 15 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix + 1, y0 + iy, z0 + iz))) {
 					ix++;
 					bs = bsi;
 					search = true;
 				}
-				if (iy < 15 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix, y0 + iy + 1, z0 + iz))) {
+				if (iy < 15 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix, y0 + iy + 1, z0 + iz))) {
 					iy++;
 					bs = bsi;
 					search = true;
 				}
-				if (iz < 15 && !TerrainUtil.isAirOrWater(bsi = getBlockStateAt(x0 + ix, y0 + iy, z0 + iz + 1))) {
+				if (iz < 15 && !TerrainUtil.shouldBeSkipped(bsi = getBlockStateAt(x0 + ix, y0 + iy, z0 + iz + 1))) {
 					iz++;
 					bs = bsi;
 					search = true;

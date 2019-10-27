@@ -73,11 +73,12 @@ public class CWGFarPlaneViewEventHandler {
 			}
 		}
 		if(canRun) {
-			WorldSavedDataTerrainSurface3d data = WorldSavedDataTerrainSurface3d.getOrCreateWorldSavedData(world);
 			int x = event.getCubePos().getX() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
 			int y = event.getCubePos().getY() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
 			int z = event.getCubePos().getZ() >> CUBE_SIZE_BIT_MESH + MESH_SIZE_BIT_CHUNKS;
-			data.removeFromMap(x,y,z);
+			WorldSavedDataTerrainSurface3d ref = WorldSavedDataTerrainSurface3d.instance;
+			if (ref != null)
+				ref.removeFromMap(x, y, z);
 		}
 	}
 
@@ -85,10 +86,6 @@ public class CWGFarPlaneViewEventHandler {
 		if (world.isRemote || !(world instanceof WorldServer))
 			return false;
 		if (world.provider.getDimension() != 0 || !((ICubicWorld) world).isCubicWorld())
-			return false;
-		// Vanilla generator have no methods of retrieving ChunkPrimer directly. Using
-		// it to get chunks instead cause data corruption.
-		if (world.getWorldType().getName().equals("VanillaCubic"))
 			return false;
 		return true;
 	}

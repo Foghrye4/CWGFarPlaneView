@@ -8,7 +8,6 @@ import cwgfarplaneview.world.terrain.volumetric.TerrainPoint3D;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.biome.Biome;
 
 public class TerrainUtil {
@@ -56,8 +55,10 @@ public class TerrainUtil {
 		return new Vec3f(nx / d, ny / d, nz / d);
 	}
 	
-	public static boolean isAirOrWater(IBlockState state) {
-		return state == Blocks.AIR.getDefaultState() || state.getMaterial() == Material.WATER;
+	public static boolean shouldBeSkipped(IBlockState state) {
+		if (state.getMaterial() == Material.LAVA)
+			return false;
+		return state == Blocks.AIR.getDefaultState() || state.getMaterial() == Material.WATER || !state.isFullBlock();
 	}
 
 	public static Vec3f calculateNormal(TerrainPoint3D tp1, TerrainPoint3D tp2, TerrainPoint3D tp3) {
@@ -84,34 +85,6 @@ public class TerrainUtil {
 		return new Vec3f(nx / d, ny / d, nz / d);
 	}
 	
-	/**Normal non normalized*/
-	public static Vec3i calculateNonNormalized(TerrainPoint3D tp1, TerrainPoint3D tp2, TerrainPoint3D tp3) {
-		int bx1 = tp1.meshX;
-		int bz1 = tp1.meshZ;
-		int by1 = tp1.meshY;
-		int bx2 = tp2.meshX;
-		int bz2 = tp2.meshZ;
-		int by2 = tp2.meshY;
-		int bx3 = tp3.meshX;
-		int bz3 = tp3.meshZ;
-		int by3 = tp3.meshY;
-		int v1x = bx1 - bx2;
-		int v1y = by1 - by2;
-		int v1z = bz1 - bz2;
-		int v2x = bx3 - bx2;
-		int v2y = by3 - by2;
-		int v2z = bz3 - bz2;
-		int nx = v1y * v2z - v1z * v2y;
-		int ny = v1z * v2x - v1x * v2z;
-		int nz = v1x * v2y - v1y * v2z;
-		return new Vec3i(nx, ny, nz);
-	}
-
-
-	public static Vec3i vec3i(TerrainPoint3D from, TerrainPoint3D to) {
-		return new Vec3i(to.meshX-from.meshX, to.meshY-from.meshY, to.meshZ-from.meshZ);
-	}
-
 	public static int crossAndDot(TerrainPoint3D base, TerrainPoint3D firstPoint,
 			TerrainPoint3D secondPoint, TerrainPoint3D bissectPoint) {
 		int v1x = firstPoint.getX() - base.getX();

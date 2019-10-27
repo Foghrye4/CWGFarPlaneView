@@ -15,7 +15,6 @@ public class DiskDataUtil {
 			path = path.resolve(prov.getSaveFolder());
 		}
 		Path part3d = path.resolve("region3d");
-		
 		return SaveSection3D.createAt(part3d);
 	}
 }

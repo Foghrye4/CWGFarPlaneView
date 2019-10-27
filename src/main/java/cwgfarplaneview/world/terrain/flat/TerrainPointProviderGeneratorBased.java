@@ -1,7 +1,7 @@
 package cwgfarplaneview.world.terrain.flat;
 
 import static cwgfarplaneview.util.TerrainConfig.MESH_SIZE_BIT_CHUNKS;
-import static cwgfarplaneview.util.TerrainUtil.isAirOrWater;
+import static cwgfarplaneview.util.TerrainUtil.shouldBeSkipped;
 
 import cwgfarplaneview.world.terrain.IncorrectTerrainDataException;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
@@ -31,14 +31,14 @@ public class TerrainPointProviderGeneratorBased implements TerrainPointProvider 
 		int cubeX = meshX << MESH_SIZE_BIT_CHUNKS;
 		int cubeZ = meshZ << MESH_SIZE_BIT_CHUNKS;
 		CubePrimer primer = generator.generateCube(cubeX, cubeY, cubeZ);
-		while (isAirOrWater(primer.getBlockState(0, 0, 0))) {
+		while (shouldBeSkipped(primer.getBlockState(0, 0, 0))) {
 			primer = generator.generateCube(cubeX, --cubeY, cubeZ);
 		}
-		while (!isAirOrWater(primer.getBlockState(0, 15, 0))) {
+		while (!shouldBeSkipped(primer.getBlockState(0, 15, 0))) {
 			primer = generator.generateCube(cubeX, ++cubeY, cubeZ);
 		}
 		for (int iy = 0; iy < 16; iy++) {
-			if (isAirOrWater(primer.getBlockState(0, iy, 0))) {
+			if (shouldBeSkipped(primer.getBlockState(0, iy, 0))) {
 				if (iy == 0) {
 					primer = generator.generateCube(cubeX, --cubeY, cubeZ);
 					continue;
